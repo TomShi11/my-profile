@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tom Shi - 个人主页</title>
+    <title>Tom Shi - 宇宙探索者</title>
     <style>
         /* 全局重置与字体 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -12,155 +12,141 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 更高级的深空渐变背景 */
-            background: radial-gradient(circle at top right, #2c0e37, #0d1117);
+            /* 使用高质量的深空背景图 */
+            background: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5980?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80') no-repeat center center/cover;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             color: #ffffff;
             overflow: hidden;
+        }
+        /* 加一层黑色遮罩，让背景更深邃，文字更清晰 */
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
         }
 
         /* 玻璃卡片主体 */
         .card {
             position: relative;
             width: 90%;
-            max-width: 420px;
-            padding: 40px;
+            max-width: 450px; /* 稍微宽一点 */
+            padding: 50px 40px; /* 增加内边距 */
             /* 核心：玻璃拟态效果 */
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px); /* 更强的磨砂感 */
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            background: rgba(20, 20, 30, 0.3); /* 更深色的玻璃 */
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 20px;
+            /* 边框发光效果 */
+            border: 1px solid rgba(100, 200, 255, 0.1);
+            box-shadow: 0 0 40px rgba(0, 150, 255, 0.2); /* 蓝色光晕 */
             text-align: center;
-            overflow: hidden;
             transition: transform 0.4s ease, box-shadow 0.4s ease;
         }
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.6);
-        }
-
-        /* 背景光晕装饰 */
-        .card::before {
-            content: '';
-            position: absolute;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(111, 76, 255, 0.1) 0%, transparent 60%);
-            animation: rotate 20s linear infinite;
-            z-index: -1;
-        }
-        @keyframes rotate { 100% { transform: rotate(360deg); } }
-
-        /* 头像区域 */
-        .avatar-container {
-            position: relative;
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 25px;
-        }
-        .avatar {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            /* 给头像加一个发光的边框 */
-            border: 3px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 0 20px rgba(111, 76, 255, 0.5);
+            box-shadow: 0 0 60px rgba(0, 150, 255, 0.4);
         }
 
         /* 文本内容 */
         h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-            /* 文字渐变效果 */
-            background: linear-gradient(to right, #fff, #a5a5a5);
+            font-size: 2.8rem; /* 更大的名字 */
+            font-weight: 800;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+            /* 文字渐变：星空蓝到白 */
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
         }
         .title {
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #a0c4ff; /* 浅蓝色副标题 */
+            margin-bottom: 30px;
             font-weight: 500;
+            letter-spacing: 1px;
         }
-        .bio {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.6);
+        
+        /* 兴趣标签区域 */
+        .tags {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
             margin-bottom: 35px;
+            flex-wrap: wrap;
+        }
+        .tag {
+            padding: 6px 14px;
+            /* 科技感标签背景 */
+            background: rgba(79, 172, 254, 0.15);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: #4facfe;
+            font-weight: 600;
         }
 
         /* 链接按钮区域 */
         .links {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 18px;
         }
         .link-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 14px 20px;
+            padding: 15px 20px;
             text-decoration: none;
             color: #fff;
-            /* 按钮也是毛玻璃 */
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            /* 按钮深色背景 */
+            background: rgba(20, 30, 50, 0.6);
+            border: 1px solid rgba(79, 172, 254, 0.2);
+            border-radius: 12px;
             font-weight: 600;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            font-family: 'Courier New', Courier, monospace; /* 代码风格字体 */
         }
-        .link-btn span { margin-left: 10px; }
+        .link-btn span { margin-left: 10px; letter-spacing: 1px; }
         
-        /* 按钮悬停效果：变亮并带有光泽 */
+        /* 按钮悬停效果：科技感发光 */
         .link-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(79, 172, 254, 0.2);
+            border-color: #4facfe;
             transform: scale(1.02);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 25px rgba(79, 172, 254, 0.4);
         }
-        .link-btn::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: 0.5s;
-        }
-        .link-btn:hover::after { left: 100%; }
 
     </style>
 </head>
 <body>
 
     <div class="card">
-        <div class="avatar-container">
-            <img src="image_8.png" alt="Tom Shi" class="avatar">
+        <h1>TOM SHI</h1>
+        
+        <p class="title">// 探索宇宙法则与数字逻辑 //</p>
+        
+        <div class="tags">
+            <span class="tag">⚛️ 物理学</span>
+            <span class="tag">💻 编程</span>
+            <span class="tag">🌐 Web 开发</span>
+            <span class="tag">🚀 航天</span>
         </div>
-        
-        <h1>Tom Shi</h1>
-        <p class="title">独立开发者 / 技术爱好者</p>
-        
-        <p class="bio">
-            热衷于创造简洁、优雅的代码与产品。<br>
-            保持好奇，持续学习，探索数字世界的无限可能。
-        </p>
 
         <div class="links">
             <a href="mailto:tom11s@outlook.com" class="link-btn">
-                📧 <span>发送邮件联系我</span>
+                📧 <span>tom11s@outlook.com</span>
             </a>
-            <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="link-btn" style="background: linear-gradient(45deg, rgba(64, 93, 230, 0.2), rgba(131, 58, 180, 0.2));">
-                📸 <span>关注我的 Instagram</span>
+            <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="link-btn">
+                📸 <span>Instagram / @tom.11s</span>
             </a>
             <a href="#" class="link-btn">
-                🌐 <span>访问我的个人网站</span>
+                🏠 <span>个人博客 (Coming Soon)</span>
             </a>
         </div>
     </div>
