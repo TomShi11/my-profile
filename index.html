@@ -143,22 +143,25 @@
         </div>
     </div>
 
-    <script>
+<script>
         // 🔴🔴🔴 请在这里填入你之前在【计数器项目】里用的那个 URL 和 KEY
         const SUPABASE_URL = 'https://fznfneqwxzuwtognuoeo.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_UlNMDLt4OaYIX-_lCezGwA_8jIQLhFO';
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // 🟢 修复点：把变量名从 supabase 改成 supabaseClient，避免冲突！
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function initCounter() {
             const countDisplay = document.getElementById('visit-count');
             const statusDot = document.getElementById('status-dot');
 
-            // 1. 尝试 +1
-            await supabase.rpc('increment_visits', { page_id: 'home_page' });
+            // 1. 尝试 +1 (注意这里也改成了 supabaseClient)
+            const { error: rpcError } = await supabaseClient.rpc('increment_visits', { page_id: 'home_page' });
+            
+            if (rpcError) console.log("计数增加失败(可能是首次访问):", rpcError);
 
-            // 2. 获取最新数字
-            const { data, error } = await supabase
+            // 2. 获取最新数字 (注意这里也改成了 supabaseClient)
+            const { data, error } = await supabaseClient
                 .from('site_stats')
                 .select('visits')
                 .eq('id', 'home_page')
@@ -170,6 +173,7 @@
                 statusDot.classList.remove('loading');
             } else {
                 // 失败：显示 Error
+                console.error("读取失败:", error);
                 countDisplay.innerText = "OFFLINE";
                 statusDot.style.backgroundColor = "red";
             }
