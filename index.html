@@ -3,76 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的个人主页</title>
+    <title>Tom Shi - 个人主页</title>
     <style>
+        /* 全局重置与字体 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            margin: 0;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* 深蓝渐变背景 */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: white;
+            /* 更高级的深空渐变背景 */
+            background: radial-gradient(circle at top right, #2c0e37, #0d1117);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #ffffff;
             overflow: hidden;
         }
+
+        /* 玻璃卡片主体 */
         .card {
-            background: rgba(255, 255, 255, 0.1); /* 玻璃特效 */
-            padding: 50px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px); /* 磨砂玻璃模糊 */
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            text-align: center;
-            max-width: 400px;
+            position: relative;
             width: 90%;
-            transition: transform 0.3s ease;
+            max-width: 420px;
+            padding: 40px;
+            /* 核心：玻璃拟态效果 */
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px); /* 更强的磨砂感 */
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            overflow: hidden;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
         }
         .card:hover {
-            transform: translateY(-10px); /* 鼠标悬停浮动效果 */
+            transform: translateY(-5px);
+            box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.6);
+        }
+
+        /* 背景光晕装饰 */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(111, 76, 255, 0.1) 0%, transparent 60%);
+            animation: rotate 20s linear infinite;
+            z-index: -1;
+        }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+
+        /* 头像区域 */
+        .avatar-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 25px;
         }
         .avatar {
-            width: 100px;
-            height: 100px;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
-            border: 3px solid white;
-            margin-bottom: 20px;
             object-fit: cover;
+            /* 给头像加一个发光的边框 */
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 20px rgba(111, 76, 255, 0.5);
         }
-        h1 { margin: 0; font-size: 2rem; letter-spacing: 2px; }
-        p { color: #ddd; margin-top: 10px; font-size: 1rem; line-height: 1.5; }
-        .buttons { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; }
-        .btn {
+
+        /* 文本内容 */
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+            /* 文字渐变效果 */
+            background: linear-gradient(to right, #fff, #a5a5a5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .title {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .bio {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 35px;
+        }
+
+        /* 链接按钮区域 */
+        .links {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .link-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 20px;
             text-decoration: none;
-            color: white;
-            padding: 12px 30px;
-            border-radius: 50px;
+            color: #fff;
+            /* 按钮也是毛玻璃 */
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .link-btn span { margin-left: 10px; }
+        
+        /* 按钮悬停效果：变亮并带有光泽 */
+        .link-btn:hover {
             background: rgba(255, 255, 255, 0.2);
-            transition: all 0.3s;
-            border: 1px solid transparent;
-            font-weight: bold;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
         }
-        .btn:hover {
-            background: white;
-            color: #1e3c72;
-            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+        .link-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
         }
+        .link-btn:hover::after { left: 100%; }
+
     </style>
 </head>
 <body>
 
     <div class="card">
-        <img src="https://github.com/github.png" alt="Avatar" class="avatar">
+        <div class="avatar-container">
+            <img src="image_8.png" alt="Tom Shi" class="avatar">
+        </div>
         
-        <h1>你好，我是Tom Shi</h1>
+        <h1>Tom Shi</h1>
+        <p class="title">独立开发者 / 技术爱好者</p>
         
-        <p>
-            这里是我的个人名片。<br>
-            热衷于探索物理、编程与 Web 开发。
+        <p class="bio">
+            热衷于创造简洁、优雅的代码与产品。<br>
+            保持好奇，持续学习，探索数字世界的无限可能。
         </p>
 
-        <div class="buttons">
-            <a href="mailto:tom11s@outlook.com" class="btn">📧 给我发邮件</a>
+        <div class="links">
+            <a href="mailto:tom11s@outlook.com" class="link-btn">
+                📧 <span>发送邮件联系我</span>
+            </a>
+            <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="link-btn" style="background: linear-gradient(45deg, rgba(64, 93, 230, 0.2), rgba(131, 58, 180, 0.2));">
+                📸 <span>关注我的 Instagram</span>
+            </a>
+            <a href="#" class="link-btn">
+                🌐 <span>访问我的个人网站</span>
+            </a>
         </div>
     </div>
 
