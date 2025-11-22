@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tom Shi - 个人名片</title>
+    <title>Tom Shi - 个人主页</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* 全局重置 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,17 +14,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            
-            /* 🌌 核心修改：用代码画出的深空背景 */
-            /* 这是一个深色渐变，模拟宇宙深处的星云 */
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
             color: #ffffff;
             overflow: hidden;
         }
 
-        /* 增加一个噪点图层，让背景更有质感（可选） */
+        /* 噪点背景 */
         body::before {
             content: "";
             position: absolute;
@@ -34,133 +31,98 @@
             pointer-events: none;
         }
 
-        /* 玻璃卡片主体 */
+        /* 玻璃卡片 */
         .card {
             position: relative;
             width: 90%;
             max-width: 480px;
-            padding: 60px 40px;
-            /* 玻璃效果 */
+            padding: 50px 40px 30px 40px; /* 底部padding调小一点，给计数器留位置 */
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-radius: 24px;
             border: 1px solid rgba(255, 255, 255, 0.08);
-            /* 深邃的阴影 */
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             text-align: center;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.4s;
         }
-        
-        .card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(79, 172, 254, 0.3);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 20px rgba(79, 172, 254, 0.2);
-        }
+        .card:hover { transform: translateY(-5px); }
 
-        /* 名字 */
+        /* 名字与标题 */
         h1 {
-            font-family: 'Courier New', Courier, monospace; /* 编程风格字体 */
+            font-family: 'Courier New', monospace;
             font-size: 3rem;
             font-weight: 900;
             margin-bottom: 10px;
             letter-spacing: -2px;
-            /* 极光渐变字 */
             background: linear-gradient(to right, #ffffff, #79c2ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 0 30px rgba(121, 194, 255, 0.3);
         }
-
-        /* 副标题 */
         .title {
             font-size: 0.9rem;
-            text-transform: uppercase;
             letter-spacing: 4px;
             color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
 
-        /* 标签云 */
-        .tags {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 40px;
-        }
+        /* 标签 */
+        .tags { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
         .tag {
-            font-size: 0.8rem;
-            padding: 8px 16px;
-            border-radius: 100px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.8rem; padding: 6px 12px; border-radius: 50px;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
             color: #a0c4ff;
-            transition: all 0.3s;
-            cursor: default;
-        }
-        .tag:hover {
-            background: rgba(79, 172, 254, 0.2);
-            color: #fff;
-            border-color: #4facfe;
-            box-shadow: 0 0 15px rgba(79, 172, 254, 0.3);
         }
 
         /* 链接按钮 */
-        .links {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
+        .links { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
         .link-btn {
-            display: block;
-            padding: 16px;
-            text-decoration: none;
-            color: white;
-            background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px;
-            font-weight: 500;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
+            display: block; padding: 14px; text-decoration: none; color: white;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px; transition: 0.3s;
         }
-        /* 按钮里的文字 */
-        .link-text {
-            position: relative;
-            z-index: 2;
+        .link-btn:hover { background: rgba(255,255,255,0.1); border-color: #4facfe; }
+
+        /* --------------- 🚀 新增组件：计数器 --------------- */
+        .footer-counter {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            color: #555;
+            letter-spacing: 2px;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 10px;
         }
         
-        /* 按钮悬停动画 */
-        .link-btn:hover {
-            transform: scale(1.02);
-            border-color: rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.1);
+        /* 闪烁的信号灯 */
+        .status-dot {
+            width: 8px; height: 8px;
+            background-color: #00ff88; /* 正常是绿色 */
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ff88;
+            animation: pulse 2s infinite;
         }
-        /* 悬停时的光效 */
-        .link-btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 0%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(79, 172, 254, 0.1), transparent);
-            transition: width 0.5s ease;
-            z-index: 1;
-        }
-        .link-btn:hover::before {
-            width: 100%;
+        .status-dot.loading { background-color: #ffaa00; box-shadow: 0 0 10px #ffaa00; } /* 加载中是橙色 */
+        
+        /* 数字本身 */
+        #visit-count {
+            color: #a0c4ff;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(160, 196, 255, 0.5);
         }
 
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
     <div class="card">
         <h1>TOM SHI</h1>
-        
         <p class="title">EXPLORING THE DIGITAL VOID</p>
         
         <div class="tags">
@@ -171,19 +133,50 @@
         </div>
 
         <div class="links">
-            <a href="mailto:tom11s@outlook.com" class="link-btn">
-                <span class="link-text">📧 tom11s@outlook.com</span>
-            </a>
-            
-            <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="link-btn">
-                <span class="link-text">📸 Instagram</span>
-            </a>
-            
-            <a href="#" class="link-btn" style="opacity: 0.6; cursor: not-allowed;">
-                <span class="link-text">🚧 Blog (Building...)</span>
-            </a>
+            <a href="mailto:tom11s@outlook.com" class="link-btn">📧 tom11s@outlook.com</a>
+            <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="link-btn">📸 Instagram</a>
+        </div>
+
+        <div class="footer-counter">
+            <div id="status-dot" class="status-dot loading"></div>
+            <span>OBSERVERS: <span id="visit-count">----</span></span>
         </div>
     </div>
 
+    <script>
+        // 🔴🔴🔴 请在这里填入你之前在【计数器项目】里用的那个 URL 和 KEY
+        const SUPABASE_URL = https://fznfneqwxzuwtognuoeo.supabase.co;
+        const SUPABASE_KEY = sb_publishable_UlNMDLt4OaYIX-_lCezGwA_8jIQLhFO;
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function initCounter() {
+            const countDisplay = document.getElementById('visit-count');
+            const statusDot = document.getElementById('status-dot');
+
+            // 1. 尝试 +1
+            await supabase.rpc('increment_visits', { page_id: 'home_page' });
+
+            // 2. 获取最新数字
+            const { data, error } = await supabase
+                .from('site_stats')
+                .select('visits')
+                .eq('id', 'home_page')
+                .single();
+
+            if (!error && data) {
+                // 成功：显示数字，把灯变绿
+                countDisplay.innerText = data.visits.toString().padStart(4, '0');
+                statusDot.classList.remove('loading');
+            } else {
+                // 失败：显示 Error
+                countDisplay.innerText = "OFFLINE";
+                statusDot.style.backgroundColor = "red";
+            }
+        }
+
+        // 启动！
+        initCounter();
+    </script>
 </body>
 </html>
