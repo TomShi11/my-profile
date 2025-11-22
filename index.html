@@ -5,121 +5,153 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tom Shi - 宇宙探索者</title>
     <style>
-        /* 全局重置与字体 */
+        /* 全局重置 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 使用高质量的深空背景图 */
-            background: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5980?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80') no-repeat center center/cover;
+            
+            /* 🌌 核心修改：用代码画出的深空背景 */
+            /* 这是一个深色渐变，模拟宇宙深处的星云 */
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             color: #ffffff;
             overflow: hidden;
         }
-        /* 加一层黑色遮罩，让背景更深邃，文字更清晰 */
-        body::after {
-            content: '';
+
+        /* 增加一个噪点图层，让背景更有质感（可选） */
+        body::before {
+            content: "";
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: 0.15;
             z-index: -1;
+            pointer-events: none;
         }
 
         /* 玻璃卡片主体 */
         .card {
             position: relative;
             width: 90%;
-            max-width: 450px; /* 稍微宽一点 */
-            padding: 50px 40px; /* 增加内边距 */
-            /* 核心：玻璃拟态效果 */
-            background: rgba(20, 20, 30, 0.3); /* 更深色的玻璃 */
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-radius: 20px;
-            /* 边框发光效果 */
-            border: 1px solid rgba(100, 200, 255, 0.1);
-            box-shadow: 0 0 40px rgba(0, 150, 255, 0.2); /* 蓝色光晕 */
+            max-width: 480px;
+            padding: 60px 40px;
+            /* 玻璃效果 */
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            /* 深邃的阴影 */
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             text-align: center;
-            transition: transform 0.4s ease, box-shadow 0.4s ease;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0 60px rgba(0, 150, 255, 0.4);
-        }
-
-        /* 文本内容 */
-        h1 {
-            font-size: 2.8rem; /* 更大的名字 */
-            font-weight: 800;
-            margin-bottom: 15px;
-            letter-spacing: 2px;
-            /* 文字渐变：星空蓝到白 */
-            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
-        }
-        .title {
-            font-size: 1.1rem;
-            color: #a0c4ff; /* 浅蓝色副标题 */
-            margin-bottom: 30px;
-            font-weight: 500;
-            letter-spacing: 1px;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
-        /* 兴趣标签区域 */
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(79, 172, 254, 0.3);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 20px rgba(79, 172, 254, 0.2);
+        }
+
+        /* 名字 */
+        h1 {
+            font-family: 'Courier New', Courier, monospace; /* 编程风格字体 */
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            letter-spacing: -2px;
+            /* 极光渐变字 */
+            background: linear-gradient(to right, #ffffff, #79c2ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(121, 194, 255, 0.3);
+        }
+
+        /* 副标题 */
+        .title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 40px;
+        }
+
+        /* 标签云 */
         .tags {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 35px;
             flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 40px;
         }
         .tag {
-            padding: 6px 14px;
-            /* 科技感标签背景 */
-            background: rgba(79, 172, 254, 0.15);
-            border: 1px solid rgba(79, 172, 254, 0.3);
-            border-radius: 50px;
-            font-size: 0.85rem;
-            color: #4facfe;
-            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 8px 16px;
+            border-radius: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a0c4ff;
+            transition: all 0.3s;
+            cursor: default;
+        }
+        .tag:hover {
+            background: rgba(79, 172, 254, 0.2);
+            color: #fff;
+            border-color: #4facfe;
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.3);
         }
 
-        /* 链接按钮区域 */
+        /* 链接按钮 */
         .links {
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 16px;
         }
         .link-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 15px 20px;
+            display: block;
+            padding: 16px;
             text-decoration: none;
-            color: #fff;
-            /* 按钮深色背景 */
-            background: rgba(20, 30, 50, 0.6);
-            border: 1px solid rgba(79, 172, 254, 0.2);
+            color: white;
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+            border: 1px solid rgba(255,255,255,0.05);
             border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+            font-weight: 500;
+            transition: all 0.3s;
             position: relative;
             overflow: hidden;
-            font-family: 'Courier New', Courier, monospace; /* 代码风格字体 */
         }
-        .link-btn span { margin-left: 10px; letter-spacing: 1px; }
+        /* 按钮里的文字 */
+        .link-text {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
         
-        /* 按钮悬停效果：科技感发光 */
+        /* 按钮悬停动画 */
         .link-btn:hover {
-            background: rgba(79, 172, 254, 0.2);
-            border-color: #4facfe;
             transform: scale(1.02);
-            box-shadow: 0 0 25px rgba(79, 172, 254, 0.4);
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+        }
+        /* 悬停时的光效 */
+        .link-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 0%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(79, 172, 254, 0.1), transparent);
+            transition: width 0.5s ease;
+            z-index: 1;
+        }
+        .link-btn:hover::before {
+            width: 100%;
         }
 
     </style>
@@ -129,24 +161,26 @@
     <div class="card">
         <h1>TOM SHI</h1>
         
-        <p class="title">// 探索宇宙法则与数字逻辑 //</p>
+        <p class="title">EXPLORING THE DIGITAL VOID</p>
         
         <div class="tags">
-            <span class="tag">⚛️ 物理学</span>
-            <span class="tag">💻 编程</span>
-            <span class="tag">🌐 Web 开发</span>
-            <span class="tag">🚀 航天</span>
+            <span class="tag">⚛️ Physics</span>
+            <span class="tag">💻 Coding</span>
+            <span class="tag">🌐 Web Dev</span>
+            <span class="tag">🚀 Space</span>
         </div>
 
         <div class="links">
             <a href="mailto:tom11s@outlook.com" class="link-btn">
-                📧 <span>tom11s@outlook.com</span>
+                <span class="link-text">📧 tom11s@outlook.com</span>
             </a>
+            
             <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="link-btn">
-                📸 <span>Instagram / @tom.11s</span>
+                <span class="link-text">📸 Instagram</span>
             </a>
-            <a href="#" class="link-btn">
-                🏠 <span>个人博客 (Coming Soon)</span>
+            
+            <a href="#" class="link-btn" style="opacity: 0.6; cursor: not-allowed;">
+                <span class="link-text">🚧 Blog (Building...)</span>
             </a>
         </div>
     </div>
