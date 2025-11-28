@@ -1,186 +1,632 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tom Shi - 个人主页</title>
+    <title>Tom Shi | The Event Horizon</title>
+    <meta name="description" content="Physics enthusiast & Web Developer">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
     <style>
-        /* 全局重置 */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        /* =========================================
+           1. CORE SYSTEM & TYPOGRAPHY
+           ========================================= */
+        :root {
+            --bg-deep: #030005;
+            --glass-surface: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.15);
+            --primary-accent: #6e56cf; /* 宇宙紫 */
+            --secondary-accent: #3fb5ff; /* 极光蓝 */
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            --cursor-size: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; /* 隐藏默认鼠标 */ }
+
         body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-display);
+            overflow-x: hidden;
             height: 100vh;
+            width: 100vw;
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* =========================================
+           2. LOADING SCREEN (开场动画)
+           ========================================= */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            font-family: 'Inter', sans-serif;
-            color: #ffffff;
+            flex-direction: column;
+        }
+        .loader-text {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            letter-spacing: 4px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        .loader-bar-bg {
+            width: 200px; height: 2px;
+            background: #222;
+            position: relative;
             overflow: hidden;
         }
-
-        /* 噪点背景 */
-        body::before {
-            content: "";
+        .loader-bar-fill {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-            opacity: 0.15;
-            z-index: -1;
+            left: 0; top: 0; height: 100%; width: 0%;
+            background: #fff;
+            transition: width 0.1s ease;
+        }
+
+        /* =========================================
+           3. CANVAS BACKGROUND (3D 场景层)
+           ========================================= */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            opacity: 0; /* 加载完成后显示 */
+            transition: opacity 2s ease;
+        }
+
+        /* =========================================
+           4. CUSTOM CURSOR (磁吸光标)
+           ========================================= */
+        #cursor {
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--cursor-size); height: var(--cursor-size);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
             pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background-color 0.3s, border-color 0.3s;
+            mix-blend-mode: difference;
+        }
+        #cursor-dot {
+            position: fixed;
+            top: 0; left: 0;
+            width: 4px; height: 4px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+        }
+        body:hover #cursor.hovered {
+            width: 50px; height: 50px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: transparent;
+            backdrop-filter: blur(2px);
         }
 
-        /* 玻璃卡片 */
-        .card {
+        /* =========================================
+           5. MAIN INTERFACE (Bento Grid 布局)
+           ========================================= */
+        #ui-layer {
             position: relative;
-            width: 90%;
-            max-width: 480px;
-            padding: 50px 40px 30px 40px; /* 底部padding调小一点，给计数器留位置 */
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            transition: transform 0.4s;
-        }
-        .card:hover { transform: translateY(-5px); }
-
-        /* 名字与标题 */
-        h1 {
-            font-family: 'Courier New', monospace;
-            font-size: 3rem;
-            font-weight: 900;
-            margin-bottom: 10px;
-            letter-spacing: -2px;
-            background: linear-gradient(to right, #ffffff, #79c2ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(121, 194, 255, 0.3);
-        }
-        .title {
-            font-size: 0.9rem;
-            letter-spacing: 4px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 30px;
-        }
-
-        /* 标签 */
-        .tags { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
-        .tag {
-            font-size: 0.8rem; padding: 6px 12px; border-radius: 50px;
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #a0c4ff;
-        }
-
-        /* 链接按钮 */
-        .links { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
-        .link-btn {
-            display: block; padding: 14px; text-decoration: none; color: white;
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px; transition: 0.3s;
-        }
-        .link-btn:hover { background: rgba(255,255,255,0.1); border-color: #4facfe; }
-
-        /* --------------- 🚀 新增组件：计数器 --------------- */
-        .footer-counter {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.8rem;
-            color: #555;
-            letter-spacing: 2px;
+            z-index: 10;
+            width: 100%;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
+            padding: 40px;
+            opacity: 0; /* 入场前隐藏 */
         }
-        
-        /* 闪烁的信号灯 */
-        .status-dot {
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(10, 60px); /* 精细化行高 */
+            gap: 24px;
+            width: 100%;
+            max-width: 1000px;
+            perspective: 1000px; /* 3D 透视 */
+        }
+
+        /* 卡片基础物理属性 */
+        .glass-card {
+            background: var(--glass-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s;
+            transform-style: preserve-3d; /* 开启3D子元素 */
+        }
+        .glass-card:hover {
+            border-color: var(--glass-highlight);
+        }
+        /* 卡片内部光效 */
+        .glass-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.06), transparent 40%);
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .glass-card:hover::after { opacity: 1; }
+
+        /* --- 具体的卡片布局 --- */
+
+        /* A. 个人信息 (左上大块) */
+        .area-profile {
+            grid-column: span 2;
+            grid-row: span 5;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .profile-header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -2px;
+            background: linear-gradient(120deg, #fff, #888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 100px;
+            background: rgba(110, 86, 207, 0.2);
+            border: 1px solid rgba(110, 86, 207, 0.4);
+            color: #bfaaff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            margin-bottom: 24px;
+        }
+        .bio-text {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        /* B. 计数器仪表盘 (右上) */
+        .area-stats {
+            grid-column: span 2;
+            grid-row: span 3;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.2));
+        }
+        .stat-group { display: flex; flex-direction: column; }
+        .stat-label { 
+            font-family: var(--font-mono); 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            font-size: 0.75rem; 
+            color: #555; 
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 3.5rem;
+            font-weight: 400;
+            color: var(--secondary-accent);
+            text-shadow: 0 0 30px rgba(63, 181, 255, 0.4);
+        }
+        .live-dot {
             width: 8px; height: 8px;
-            background-color: #00ff88; /* 正常是绿色 */
+            background: #00ff88;
             border-radius: 50%;
             box-shadow: 0 0 10px #00ff88;
             animation: pulse 2s infinite;
         }
-        .status-dot.loading { background-color: #ffaa00; box-shadow: 0 0 10px #ffaa00; } /* 加载中是橙色 */
-        
-        /* 数字本身 */
-        #visit-count {
-            color: #a0c4ff;
-            font-weight: bold;
-            text-shadow: 0 0 5px rgba(160, 196, 255, 0.5);
+
+        /* C. 技能栈 (左下) */
+        .area-stack {
+            grid-column: span 1;
+            grid-row: span 5;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .stack-item {
+            padding: 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+            transition: 0.3s;
+        }
+        .stack-item:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--primary-accent);
+            transform: translateX(5px);
         }
 
+        /* D. 社交链接 (中下) */
+        .area-social {
+            grid-column: span 2;
+            grid-row: span 2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .social-btn {
+            text-decoration: none;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.8;
+            transition: 0.3s;
+        }
+        .social-btn:hover { opacity: 1; transform: scale(1.05); }
+
+        /* E. 邮箱 (右下) */
+        .area-email {
+            grid-column: span 1;
+            grid-row: span 5;
+            background: var(--primary-accent);
+            color: #fff;
+            display: flex;
+            align-items: flex-end;
+        }
+        .email-link {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        /* 动画关键帧 */
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* 移动端适配 */
+        @media (max-width: 900px) {
+            .grid-container {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+            }
+            .glass-card { min-height: 180px; }
+            .area-profile { min-height: 300px; }
+            #cursor, #cursor-dot { display: none; } /* 移动端隐藏自定义光标 */
+        }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>TOM SHI</h1>
-        <p class="title">EXPLORING THE DIGITAL VOID</p>
-        
-        <div class="tags">
-            <span class="tag">⚛️ Physics</span>
-            <span class="tag">💻 Coding</span>
-            <span class="tag">🌐 Web Dev</span>
-            <span class="tag">🚀 Space</span>
-        </div>
+    <div id="loader">
+        <div class="loader-text">INITIALIZING PHYSICS ENGINE...</div>
+        <div class="loader-bar-bg"><div class="loader-bar-fill" id="loader-progress"></div></div>
+    </div>
 
-        <div class="links">
-            <a href="mailto:tom11s@outlook.com" class="link-btn">📧 tom11s@outlook.com</a>
-            <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="link-btn">📸 Instagram</a>
-        </div>
+    <div id="cursor"></div>
+    <div id="cursor-dot"></div>
 
-        <div class="footer-counter">
-            <div id="status-dot" class="status-dot loading"></div>
-            <span>OBSERVERS: <span id="visit-count">----</span></span>
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer">
+        <div class="grid-container">
+            
+            <div class="glass-card area-profile" data-tilt>
+                <div class="profile-header">
+                    <div class="role-badge">WEB DEVELOPER & PHYSICS GEEK</div>
+                    <h1>Tom Shi</h1>
+                </div>
+                <div class="bio-text">
+                    <p>Building digital experiences at the intersection of logic and creativity. Obsessed with the cosmos, quantum mechanics, and clean code.</p>
+                </div>
+            </div>
+
+            <div class="glass-card area-stats" data-tilt>
+                <div class="stat-group">
+                    <div class="stat-label"><div class="live-dot" style="display:inline-block; margin-right:5px"></div> Live Observers</div>
+                    <div class="stat-value" id="visit-count">0000</div>
+                </div>
+            </div>
+
+            <div class="glass-card area-stack" data-tilt>
+                <div class="stat-label" style="text-align:center; width:100%">Tech Stack</div>
+                <div class="stack-item">⚛️ React / Next.js</div>
+                <div class="stack-item">📐 Three.js / WebGL</div>
+                <div class="stack-item">⚡ Supabase</div>
+                <div class="stack-item">🐍 Python</div>
+            </div>
+
+            <div class="glass-card area-social" data-tilt>
+                <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="social-btn interactable">
+                    <span>Instagram</span>
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 17l9.2-9.2M17 17V7H7"></path></svg>
+                </a>
+                <a href="#" class="social-btn interactable">
+                    <span>GitHub</span>
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 17l9.2-9.2M17 17V7H7"></path></svg>
+                </a>
+            </div>
+
+            <div class="glass-card area-email interactable" data-tilt>
+                <a href="mailto:tom11s@outlook.com" class="email-link">
+                    Let's<br>Work<br>Together.
+                </a>
+            </div>
+
         </div>
     </div>
 
-<script>
-        // 🔴🔴🔴 请在这里填入你之前在【计数器项目】里用的那个 URL 和 KEY
-        const SUPABASE_URL = 'https://fznfneqwxzuwtognuoeo.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_UlNMDLt4OaYIX-_lCezGwA_8jIQLhFO';
+    <script>
+        // 🔴🔴🔴 配置区：填入你的 Supabase 密钥
+        const CONFIG = {
+            supabaseUrl: 'https://fznfneqwxzuwtognuoeo.supabase.co',
+            supabaseKey: 'sb_publishable_UlNMDLt4OaYIX-_lCezGwA_8jIQLhFO',
+            particleCount: 2000,
+            particleColor: 0x6e56cf
+        };
 
-        // 🟢 修复点：把变量名从 supabase 改成 supabaseClient，避免冲突！
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // ----------------------------------------------------
+        // MODULE 1: 3D ENGINE (Three.js 粒子黑洞系统)
+        // ----------------------------------------------------
+        class SpaceScene {
+            constructor() {
+                this.container = document.getElementById('canvas-container');
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.FogExp2(0x030005, 0.002); // 迷雾效果
+                
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.z = 30;
 
-        async function initCounter() {
-            const countDisplay = document.getElementById('visit-count');
-            const statusDot = document.getElementById('status-dot');
+                this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                this.container.appendChild(this.renderer.domElement);
 
-            // 1. 尝试 +1 (注意这里也改成了 supabaseClient)
-            const { error: rpcError } = await supabaseClient.rpc('increment_visits', { page_id: 'home_page' });
-            
-            if (rpcError) console.log("计数增加失败(可能是首次访问):", rpcError);
+                this.particles = null;
+                this.mouseX = 0;
+                this.mouseY = 0;
 
-            // 2. 获取最新数字 (注意这里也改成了 supabaseClient)
-            const { data, error } = await supabaseClient
-                .from('site_stats')
-                .select('visits')
-                .eq('id', 'home_page')
-                .single();
+                this.initParticles();
+                this.addEventListeners();
+                this.animate();
+            }
 
-            if (!error && data) {
-                // 成功：显示数字，把灯变绿
-                countDisplay.innerText = data.visits.toString().padStart(4, '0');
-                statusDot.classList.remove('loading');
-            } else {
-                // 失败：显示 Error
-                console.error("读取失败:", error);
-                countDisplay.innerText = "OFFLINE";
-                statusDot.style.backgroundColor = "red";
+            initParticles() {
+                const geometry = new THREE.BufferGeometry();
+                const vertices = [];
+                const colors = [];
+
+                for (let i = 0; i < CONFIG.particleCount; i++) {
+                    // 生成螺旋黑洞形状的粒子
+                    const r = Math.random() * 40 + 10; // 半径
+                    const theta = Math.random() * Math.PI * 2 * 3; // 角度
+                    const phi = (Math.random() - 0.5) * 10; // 高度弥散
+
+                    const x = r * Math.cos(theta);
+                    const y = phi; 
+                    const z = r * Math.sin(theta);
+
+                    vertices.push(x, y, z);
+                    colors.push(0.4, 0.3, 0.8); // 基础紫色
+                }
+
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 0.15,
+                    color: 0xffffff,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending
+                });
+
+                this.particles = new THREE.Points(geometry, material);
+                this.scene.add(this.particles);
+            }
+
+            addEventListeners() {
+                document.addEventListener('mousemove', (e) => {
+                    this.mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+                    this.mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+                });
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+
+            animate() {
+                requestAnimationFrame(this.animate.bind(this));
+
+                if (this.particles) {
+                    // 粒子自转
+                    this.particles.rotation.y += 0.002;
+                    // 随鼠标视差移动
+                    this.particles.rotation.x += (this.mouseY - this.particles.rotation.x) * 0.05;
+                    this.particles.rotation.z += (this.mouseX - this.particles.rotation.z) * 0.05;
+                }
+
+                this.renderer.render(this.scene, this.camera);
             }
         }
 
-        // 启动！
-        initCounter();
+        // ----------------------------------------------------
+        // MODULE 2: INTERACTION ENGINE (光标与卡片物理效果)
+        // ----------------------------------------------------
+        class Interaction {
+            constructor() {
+                this.cursor = document.getElementById('cursor');
+                this.cursorDot = document.getElementById('cursor-dot');
+                this.cards = document.querySelectorAll('[data-tilt]');
+                
+                this.mouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
+                this.cursorPos = { x: window.innerWidth/2, y: window.innerHeight/2 };
+                
+                this.initCursor();
+                this.initTilt();
+            }
+
+            initCursor() {
+                document.addEventListener('mousemove', (e) => {
+                    this.mouse.x = e.clientX;
+                    this.mouse.y = e.clientY;
+                    
+                    // 交互元素吸附检测
+                    if (e.target.closest('.interactable') || e.target.tagName === 'A') {
+                        this.cursor.classList.add('hovered');
+                    } else {
+                        this.cursor.classList.remove('hovered');
+                    }
+                });
+
+                // 光标平滑跟随循环
+                const loop = () => {
+                    // Lerp 算法实现延迟跟随
+                    this.cursorPos.x += (this.mouse.x - this.cursorPos.x) * 0.15;
+                    this.cursorPos.y += (this.mouse.y - this.cursorPos.y) * 0.15;
+
+                    this.cursor.style.transform = `translate(${this.cursorPos.x}px, ${this.cursorPos.y}px) translate(-50%, -50%)`;
+                    this.cursorDot.style.transform = `translate(${this.mouse.x}px, ${this.mouse.y}px) translate(-50%, -50%)`;
+                    
+                    requestAnimationFrame(loop);
+                };
+                loop();
+            }
+
+            initTilt() {
+                // 卡片 3D 倾斜逻辑
+                this.cards.forEach(card => {
+                    card.addEventListener('mousemove', (e) => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        
+                        // 更新 CSS 变量用于光照效果
+                        card.style.setProperty('--mouse-x', `${x}px`);
+                        card.style.setProperty('--mouse-y', `${y}px`);
+
+                        // 计算倾斜角度
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
+                        const rotateX = ((y - centerY) / centerY) * -5; // 最大倾斜 5度
+                        const rotateY = ((x - centerX) / centerX) * 5;
+
+                        gsap.to(card, {
+                            transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`,
+                            duration: 0.2
+                        });
+                    });
+
+                    card.addEventListener('mouseleave', () => {
+                        gsap.to(card, {
+                            transform: `perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)`,
+                            duration: 0.5,
+                            ease: "elastic.out(1, 0.5)"
+                        });
+                    });
+                });
+            }
+        }
+
+        // ----------------------------------------------------
+        // MODULE 3: DATA ENGINE (Supabase 后端连接)
+        // ----------------------------------------------------
+        async function initData() {
+            try {
+                const supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+                const el = document.getElementById('visit-count');
+
+                // 原子操作 +1
+                await supabase.rpc('increment_visits', { page_id: 'home_page' });
+
+                // 获取数据
+                const { data } = await supabase
+                    .from('site_stats')
+                    .select('visits')
+                    .eq('id', 'home_page')
+                    .single();
+
+                if (data) {
+                    // 数字滚动动画
+                    gsap.to(el, {
+                        innerHTML: data.visits,
+                        duration: 2,
+                        snap: { innerHTML: 1 }, // 保证是整数
+                        ease: "power2.out",
+                        onUpdate: function() {
+                            el.innerHTML = Math.ceil(this.targets()[0].innerHTML).toString().padStart(4, '0');
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Data Error:", error);
+                document.getElementById('visit-count').innerText = "ERR";
+            }
+        }
+
+        // ----------------------------------------------------
+        // INITIALIZATION (启动程序)
+        // ----------------------------------------------------
+        window.addEventListener('load', () => {
+            // 1. 模拟加载进度条
+            const progress = document.getElementById('loader-progress');
+            const loader = document.getElementById('loader');
+            const ui = document.getElementById('ui-layer');
+            const canvas = document.getElementById('canvas-container');
+
+            // 进度条动画
+            gsap.to(progress, {
+                width: "100%",
+                duration: 1.5,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    // 2. 隐藏加载页，显示主界面
+                    gsap.to(loader, { y: "-100%", duration: 0.8, ease: "power4.inOut" });
+                    
+                    // 3. 启动 3D 引擎
+                    new SpaceScene();
+                    
+                    // 4. 显示 UI 和 背景
+                    canvas.style.opacity = 1;
+                    gsap.to(ui, { opacity: 1, duration: 1, delay: 0.5 });
+                    
+                    // 5. 启动交互和数据
+                    new Interaction();
+                    initData();
+                }
+            });
+        });
+
     </script>
 </body>
 </html>
