@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,12 +14,12 @@
            ========================================= */
         :root {
             --bg-color: #000000;
-            --card-bg: #1d1d1f;
+            --card-bg: #1d1d1f; /* 苹果深空灰 */
             --text-primary: #f5f5f7;
             --text-secondary: #86868b;
             --accent-blue: #2997ff;
             --divider: #424245;
-            --font-stack: "SF Pro Display", -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif;
+            --font-stack: "SF Pro Display", -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
@@ -29,7 +29,6 @@
             color: var(--text-primary);
             font-family: var(--font-stack);
             overflow-x: hidden;
-            /* 钛金属深空背景 */
             background-image: radial-gradient(circle at 50% 0%, #2a2a2e 0%, #000000 80%);
             min-height: 100vh;
         }
@@ -53,9 +52,20 @@
             font-size: 12px;
         }
         .nav-logo { font-weight: 600; font-size: 14px; color: #fff; text-decoration: none; letter-spacing: 0.5px; }
-        .nav-links { display: flex; gap: 24px; }
+        .nav-links { display: flex; gap: 24px; align-items: center; }
         .nav-item { color: #e8e8ed; text-decoration: none; opacity: 0.8; transition: 0.3s; cursor: pointer; }
         .nav-item:hover { opacity: 1; color: var(--accent-blue); }
+        
+        /* 语言切换按钮 */
+        .lang-btn {
+            font-size: 14px;
+            background: rgba(255,255,255,0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .lang-btn:hover { background: rgba(255,255,255,0.2); }
 
         .container {
             width: 980px;
@@ -76,7 +86,6 @@
             line-height: 1.05;
             letter-spacing: -0.015em;
             margin-bottom: 24px;
-            /* 钛金属光泽渐变字 */
             background: linear-gradient(135deg, #ffffff 0%, #a1a1a6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -91,7 +100,7 @@
         }
 
         /* =========================================
-           3. Bento Grid (优化版布局)
+           3. Bento Grid
            ========================================= */
         .bento-grid {
             display: grid;
@@ -113,23 +122,19 @@
         }
         .tile:hover { transform: scale(1.02); z-index: 2; box-shadow: 0 30px 60px rgba(0,0,0,0.4); }
 
-        /* 卡片尺寸控制 */
         .tile-large { grid-column: span 2; }
         .tile-small { grid-column: span 1; }
 
-        /* 内容样式 */
         .tile-subtitle { font-size: 11px; font-weight: 600; color: #86868b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
         .tile-title { font-size: 32px; font-weight: 600; color: #f5f5f7; line-height: 1.1; margin-bottom: 15px; }
-        .tile-text { font-size: 17px; color: #86868b; line-height: 1.5; font-weight: 400; }
+        .tile-text { font-size: 17px; color: #86868b; line-height: 1.6; font-weight: 400; white-space: pre-line; } /* pre-line 保持换行 */
 
-        /* 计数器 */
         .counter-num {
             font-size: 68px; font-weight: 700; color: #fff;
             letter-spacing: -2px; margin-top: auto;
             font-variant-numeric: tabular-nums;
         }
 
-        /* 链接列表 (新版) */
         .contact-list {
             margin-top: auto;
             display: grid;
@@ -147,7 +152,6 @@
         }
         .contact-btn:hover { background: #fff; color: #000; }
 
-        /* 兴趣标签 */
         .tag-container { display: flex; flex-direction: column; gap: 12px; margin-top: auto; }
         .tag {
             font-size: 15px; color: #f5f5f7; display: flex; align-items: center; gap: 8px;
@@ -156,7 +160,7 @@
         .tag:last-child { border: none; }
 
         /* =========================================
-           4. 留言板 & 底部
+           4. Message Board
            ========================================= */
         .message-section {
             padding: 80px 0;
@@ -213,28 +217,6 @@
         }
         @keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-        /* 格言区域 */
-        .quote-section {
-            text-align: center;
-            margin-bottom: 60px;
-            padding: 40px 20px;
-            border-top: 1px solid var(--divider);
-            border-bottom: 1px solid var(--divider);
-        }
-        .quote-text {
-            font-family: "Songti SC", "SimSun", serif; /* 宋体，更有古诗韵味 */
-            font-size: 24px;
-            color: #d1d1d6;
-            margin-bottom: 10px;
-            letter-spacing: 2px;
-        }
-        .quote-author {
-            font-size: 14px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
         footer {
             padding: 40px 0;
             text-align: center;
@@ -242,7 +224,6 @@
             font-size: 12px;
         }
 
-        /* 移动端适配 */
         @media (max-width: 768px) {
             h1 { font-size: 40px; }
             .bento-grid { grid-template-columns: 1fr; }
@@ -259,9 +240,10 @@
         <div class="nav-content">
             <a href="#" class="nav-logo">Tom Shi</a>
             <div class="nav-links">
-                <a href="#about" class="nav-item">关于</a>
-                <a href="#contact" class="nav-item">联系</a>
-                <a href="#board" class="nav-item">留言</a>
+                <a href="#about" class="nav-item" data-i18n="nav_about">About</a>
+                <a href="#contact" class="nav-item" data-i18n="nav_contact">Contact</a>
+                <a href="#board" class="nav-item" data-i18n="nav_msg">Messages</a>
+                <div class="lang-btn" onclick="toggleLanguage()">🌏</div>
             </div>
         </div>
     </nav>
@@ -270,38 +252,47 @@
         <!-- Hero -->
         <section class="hero">
             <h1 class="gsap-hero">Tom Shi.</h1>
-            <p class="hero-desc gsap-hero">
-                Developer. Thinker. Explorer.<br>
-                在物理法则与数字逻辑之间构建世界。
+            <p class="hero-desc gsap-hero" data-i18n="hero_desc">
+                Developer. Thinker. Explorer.
             </p>
         </section>
 
         <!-- Bento Grid -->
         <div id="about" class="bento-grid">
             
-            <!-- 1. 简介 (大卡片) -->
+            <!-- 1. 简介 -->
             <div class="tile tile-large scroll-fade">
                 <div>
                     <div class="tile-subtitle">Profile</div>
-                    <div class="tile-title">Simplicity is the ultimate sophistication.</div>
-                    <div class="tile-text">
-                        你好，我是 Tom。我热衷于物理学与 Web 开发。<br><br>
-                        在这个熵增的宇宙里，我试图用代码构建有序的结构。我相信优秀的技术应当像物理定律一样，简洁、普适且充满美感。
+                    <div class="tile-title" data-i18n="profile_title">Hard Roads in Shu.</div>
+                    <div class="tile-text" data-i18n="profile_text">
+                        Golden cups of pure wine cost ten thousand a measure,
+                        Jade plates of rare dainties cost ten thousand a coin.
+                        I lay down my cup and chopsticks, I cannot eat,
+                        I draw my sword and look around, my mind is blank.
+                        I want to cross the Yellow River, but ice chokes the ferry,
+                        I want to climb the Taihang Mountains, but snow fills the sky.
+                        Idly I fish by the green stream,
+                        Suddenly I dream of sailing a boat towards the sun.
+                        Hard is the way, hard is the way,
+                        So many cross-roads, where am I now?
+                        A time will come to ride the wind and cleave the waves,
+                        To set my cloud-white sail and cross the blue ocean.
                     </div>
                 </div>
             </div>
 
-            <!-- 2. 计数器 (小卡片) -->
+            <!-- 2. 计数器 -->
             <div class="tile tile-small scroll-fade" style="background: #000; border: 1px solid #333;">
                 <div class="tile-subtitle" style="color: var(--accent-blue);">Real-time</div>
-                <div class="tile-title">累计访问</div>
+                <div class="tile-title" data-i18n="stats_title">Observers</div>
                 <div class="counter-num" id="visit-count">----</div>
             </div>
 
-            <!-- 3. 探索领域 (小卡片 - 已缩小) -->
+            <!-- 3. 探索领域 -->
             <div class="tile tile-small scroll-fade">
                 <div class="tile-subtitle">Interests</div>
-                <div class="tile-title">聚焦</div>
+                <div class="tile-title" data-i18n="interests_title">Focus</div>
                 <div class="tag-container">
                     <div class="tag"><span style="color: #bf5af2">⚛️</span> Quantum Physics</div>
                     <div class="tag"><span style="color: #0a84ff">💻</span> Web Development</div>
@@ -309,18 +300,18 @@
                 </div>
             </div>
 
-            <!-- 4. 保持联络 (大卡片 - 已放大并添加锚点) -->
+            <!-- 4. 保持联络 -->
             <div class="tile tile-large scroll-fade" id="contact" style="background: linear-gradient(135deg, #1d1d1f 0%, #2c2c2e 100%);">
                 <div>
                     <div class="tile-subtitle">Connect</div>
-                    <div class="tile-title">保持联络。</div>
-                    <div class="tile-text">随时欢迎交流技术、物理或任何有趣的想法。</div>
+                    <div class="tile-title" data-i18n="connect_title">Get in Touch.</div>
+                    <div class="tile-text" data-i18n="connect_text">Open to collaborations and interesting conversations.</div>
                 </div>
                 <div class="contact-list">
-                    <a href="https://tomshi.online" target="_blank" class="contact-btn">个人网站 ↗</a>
-                    <a href="mailto:tom11s@outlook.com" class="contact-btn">Email ↗</a>
-                    <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="contact-btn">Instagram ↗</a>
-                    <a href="#" class="contact-btn" style="opacity: 0.5; cursor: default;">更多即将到来...</a>
+                    <a href="https://tomshi.online" target="_blank" class="contact-btn" data-i18n="btn_website">Website ↗</a>
+                    <a href="mailto:tom11s@outlook.com" class="contact-btn" data-i18n="btn_email">Email ↗</a>
+                    <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="contact-btn" data-i18n="btn_ins">Instagram ↗</a>
+                    <a href="#" class="contact-btn" style="opacity: 0.5; cursor: default;" data-i18n="btn_more">More...</a>
                 </div>
             </div>
 
@@ -328,22 +319,21 @@
 
         <!-- 留言板 -->
         <div id="board" class="message-section scroll-fade">
-            <h2 style="font-size: 32px; font-weight: 600; margin-bottom: 10px; color: #f5f5f7;">留言板</h2>
-            <p style="color: #86868b; margin-bottom: 30px;">你的声音，云端永存。</p>
+            <h2 style="font-size: 32px; font-weight: 600; margin-bottom: 10px; color: #f5f5f7;" data-i18n="msg_title">Message Board</h2>
+            <p style="color: #86868b; margin-bottom: 30px;" data-i18n="msg_desc">Leave a note. It stays in the cloud.</p>
 
             <div class="ios-input-group">
-                <input type="text" id="msg-input" class="ios-input" placeholder="输入消息..." onkeypress="if(event.keyCode==13) sendMsg()">
+                <input type="text" id="msg-input" class="ios-input" placeholder="Type a message..." onkeypress="if(event.keyCode==13) sendMsg()">
                 <button class="ios-send-btn" onclick="sendMsg()">↑</button>
             </div>
 
             <div id="msg-list" class="message-list">
-                <div style="text-align: center; color: #444;">Loading...</div>
+                <div style="text-align: center; color: #444;" data-i18n="loading">Loading...</div>
             </div>
         </div>
 
         <footer>
-            Copyright © <span id="year"></span> Tom Shi. All rights reserved. <br>
-            Designed in Apple Style.
+            Copyright © <span id="year"></span> Tom Shi. All rights reserved.
         </footer>
     </div>
 
@@ -353,59 +343,133 @@
 
     <!-- 逻辑脚本 -->
     <script>
-        // 🔴🔴🔴 请在此处填入 Supabase URL 和 Key
+        // 🔴🔴🔴 Supabase 配置
         const CONFIG = {
-            url: '你的URL',
-            key: '你的ANON_KEY'
+            url: 'https://fznfneqwxzuwtognuoeo.supabase.co',
+            key: 'sb_publishable_UlNMDLt4OaYIX-_lCezGwA_8jIQLhFO'
         };
 
-        // 自动更新年份
-        document.getElementById('year').innerText = new Date().getFullYear();
+        // 🌐 多语言配置库
+        const i18n = {
+            en: {
+                nav_about: "About",
+                nav_contact: "Contact",
+                nav_msg: "Messages",
+                hero_desc: "Developer. Thinker. Explorer.",
+                profile_title: "Hard Roads in Shu.",
+                profile_text: "Golden cups of pure wine cost ten thousand a measure,\nJade plates of rare dainties cost ten thousand a coin.\nI lay down my cup and chopsticks, I cannot eat,\nI draw my sword and look around, my mind is blank.\nI want to cross the Yellow River, but ice chokes the ferry,\nI want to climb the Taihang Mountains, but snow fills the sky.\nIdly I fish by the green stream,\nSuddenly I dream of sailing a boat towards the sun.\nHard is the way, hard is the way,\nSo many cross-roads, where am I now?\nA time will come to ride the wind and cleave the waves,\nTo set my cloud-white sail and cross the blue ocean.",
+                stats_title: "Observers",
+                interests_title: "Focus",
+                connect_title: "Get in Touch.",
+                connect_text: "Open to collaborations and interesting conversations.",
+                msg_title: "Message Board",
+                msg_desc: "Leave a note. It stays in the cloud.",
+                loading: "Loading...",
+                no_msg: "No messages yet.",
+                db_error: "(Database not connected)",
+                send_fail: "Send failed.",
+                input_ph: "Type a message...",
+                btn_website: "Website ↗",
+                btn_email: "Email ↗",
+                btn_ins: "Instagram ↗",
+                btn_more: "More..."
+            },
+            zh: {
+                nav_about: "关于",
+                nav_contact: "联系",
+                nav_msg: "留言",
+                hero_desc: "Developer. Thinker. Explorer.",
+                profile_title: "行路难·其一",
+                profile_text: "金樽清酒斗十千，玉盘珍羞直万钱。\n停杯投箸不能食，拔剑四顾心茫然。\n欲渡黄河冰塞川，将登太行雪满山。\n闲来垂钓碧溪上，忽复乘舟梦日边。\n行路难，行路难，多歧路，今安在？\n长风破浪会有时，直挂云帆济沧海。",
+                stats_title: "访客观测",
+                interests_title: "聚焦",
+                connect_title: "保持联络。",
+                connect_text: "随时欢迎交流技术、物理或任何有趣的想法。",
+                msg_title: "留言板",
+                msg_desc: "你的声音，云端永存。",
+                loading: "正在加载...",
+                no_msg: "暂无留言，抢个沙发？",
+                db_error: "(暂未连接数据库)",
+                send_fail: "发送失败。",
+                input_ph: "写下你的想法...",
+                btn_website: "个人网站 ↗",
+                btn_email: "电子邮箱 ↗",
+                btn_ins: "Instagram ↗",
+                btn_more: "更多..."
+            }
+        };
 
+        let currentLang = 'en'; // 默认英语
+
+        // 自动检测语言
+        function detectLanguage() {
+            const userLang = navigator.language || navigator.userLanguage;
+            if (userLang.startsWith('zh')) {
+                setLanguage('zh');
+            } else {
+                setLanguage('en');
+            }
+        }
+
+        // 切换语言
+        function toggleLanguage() {
+            setLanguage(currentLang === 'en' ? 'zh' : 'en');
+        }
+
+        // 设置语言核心函数
+        function setLanguage(lang) {
+            currentLang = lang;
+            const content = i18n[lang];
+            
+            // 更新所有带 data-i18n 的元素
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (content[key]) el.innerText = content[key]; // 使用 innerText 以保留换行
+            });
+
+            // 更新输入框 placeholder
+            const input = document.getElementById('msg-input');
+            if (input) input.placeholder = content.input_ph;
+
+            // 重新加载消息提示
+            if (!sb) {
+                const list = document.getElementById('msg-list');
+                if (list) list.innerHTML = `<div style="text-align: center; color: #444; font-size: 13px;">${content.db_error}</div>`;
+            }
+        }
+
+        // -------------------------
+        // 原有逻辑保持不变
+        // -------------------------
+        document.getElementById('year').innerText = new Date().getFullYear();
         let sb = null;
 
-        // 安全初始化 Supabase
         function initSupabase() {
-            if (!CONFIG.url || CONFIG.url.includes('你的URL')) {
-                return null;
-            }
-            try {
-                return supabase.createClient(CONFIG.url, CONFIG.key);
-            } catch (e) { return null; }
+            if (!CONFIG.url || CONFIG.url.includes('你的URL')) return null;
+            try { return supabase.createClient(CONFIG.url, CONFIG.key); } catch (e) { return null; }
         }
 
         window.onload = () => {
-            initAnimations();
-            sb = initSupabase();
+            detectLanguage(); // 1. 先设置语言
+            initAnimations(); // 2. 动画
+            sb = initSupabase(); // 3. 连接数据库
 
             if (sb) {
                 initStats();
                 loadMessages();
             } else {
-                // 静默失败，不显示报错信息，只显示占位符
-                document.getElementById('msg-list').innerHTML = '<div style="text-align: center; color: #444; font-size: 13px;">(暂未连接数据库)</div>';
+                setLanguage(currentLang); // 刷新错误提示文本
             }
         };
 
-        // 动画逻辑
         function initAnimations() {
             gsap.registerPlugin(ScrollTrigger);
-            
-            // 英雄标题进场
-            gsap.from(".gsap-hero", {
-                opacity: 0, y: 30, duration: 1, stagger: 0.2, ease: "power3.out"
-            });
-
-            // 滚动渐入
+            gsap.from(".gsap-hero", { opacity: 0, y: 30, duration: 1, stagger: 0.2, ease: "power3.out" });
             gsap.utils.toArray('.scroll-fade').forEach(el => {
-                gsap.from(el, {
-                    scrollTrigger: { trigger: el, start: "top 85%" },
-                    opacity: 0, y: 40, duration: 0.8, ease: "power3.out"
-                });
+                gsap.from(el, { scrollTrigger: { trigger: el, start: "top 85%" }, opacity: 0, y: 40, duration: 0.8, ease: "power3.out" });
             });
         }
 
-        // 计数器
         async function initStats() {
             try {
                 await sb.rpc('increment_visits', { page_id: 'home_page' });
@@ -413,21 +477,17 @@
                 if (data) {
                     const el = document.getElementById('visit-count');
                     let obj = { val: 0 };
-                    gsap.to(obj, {
-                        val: data.visits, duration: 2, ease: "power4.out",
-                        onUpdate: () => el.innerText = Math.floor(obj.val).toLocaleString()
-                    });
+                    gsap.to(obj, { val: data.visits, duration: 2, ease: "power4.out", onUpdate: () => el.innerText = Math.floor(obj.val).toLocaleString() });
                 }
             } catch(e) {}
         }
 
-        // 留言板
         async function loadMessages() {
             const list = document.getElementById('msg-list');
             const { data } = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(10);
             
             if (!data || data.length === 0) {
-                list.innerHTML = '<div style="text-align: center; color: #444;">暂无留言，抢个沙发？</div>';
+                list.innerHTML = `<div style="text-align: center; color: #444;">${i18n[currentLang].no_msg}</div>`;
                 return;
             }
 
@@ -440,7 +500,7 @@
         }
 
         async function sendMsg() {
-            if (!sb) { alert('请先配置 Supabase Key'); return; }
+            if (!sb) { alert('Please configure Supabase Key first.'); return; }
             const input = document.getElementById('msg-input');
             const text = input.value.trim();
             if(!text) return;
@@ -450,7 +510,7 @@
                 input.value = '';
                 loadMessages();
             } else {
-                alert('发送失败');
+                alert(i18n[currentLang].send_fail);
             }
         }
     </script>
