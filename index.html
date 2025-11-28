@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tom Shi | Stardust OS</title>
+    <title>Tom Shi | Interstellar</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
         /* =========================================
-           1. CORE DESIGN SYSTEM (核心设计系统)
+           1. 视觉设计系统 (Visual System)
            ========================================= */
         :root {
-            --bg-color: #000000;
-            --glass-base: rgba(20, 20, 20, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shine: rgba(255, 255, 255, 0.15);
+            --bg-color: #050505;
+            --glass-base: rgba(10, 10, 12, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.06);
+            --glass-highlight: rgba(255, 255, 255, 0.1);
             --text-primary: #ffffff;
-            --text-secondary: #86868b;
-            --accent: #0a84ff;
-            --nav-height: 70px;
-            --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+            --text-secondary: #888888;
+            --nav-height: 80px;
+            --font-stack: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -33,21 +31,21 @@
             background-color: var(--bg-color);
             color: var(--text-primary);
             font-family: var(--font-stack);
-            overflow: hidden; /* 禁止滚动，全屏应用体验 */
+            overflow: hidden;
             height: 100vh;
             width: 100vw;
         }
 
-        /* 3D 画布层 */
+        /* 3D 宇宙层 */
         #canvas-world {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
-            pointer-events: none; /* 让鼠标穿透到 UI 层 */
+            opacity: 0; /* 初始隐藏，等加载完显示 */
+            transition: opacity 1.5s ease;
         }
 
-        /* UI 容器层 */
+        /* UI 滚动容器 */
         #app-container {
             position: relative;
             z-index: 10;
@@ -55,203 +53,16 @@
             display: flex;
             flex-direction: column;
             padding: 20px;
-            padding-bottom: calc(var(--nav-height) + 40px);
-            overflow-y: auto; /* 内容溢出滚动 */
+            padding-bottom: 100px;
+            overflow-y: auto;
             scroll-behavior: smooth;
+            opacity: 0; /* 初始隐藏 */
         }
-
-        /* 隐藏滚动条 */
-        #app-container::-webkit-scrollbar { width: 0px; background: transparent; }
-
-        /* =========================================
-           2. NAVIGATION DOCK (底部导航栏)
-           ========================================= */
-        .dock-container {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            background: rgba(20, 20, 20, 0.7);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 8px;
-            display: flex;
-            gap: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        .dock-item {
-            position: relative;
-            width: 50px; height: 50px;
-            border-radius: 16px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .dock-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            transform: translateY(-5px);
-        }
-
-        .dock-item.active {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 15px rgba(255,255,255,0.1);
-        }
-
-        .dock-tooltip {
-            position: absolute;
-            top: -40px;
-            background: rgba(0,0,0,0.8);
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            opacity: 0;
-            transition: 0.2s;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-        .dock-item:hover .dock-tooltip { opacity: 1; top: -50px; }
+        #app-container::-webkit-scrollbar { width: 0; }
 
         /* =========================================
-           3. PAGE TRANSITIONS & STRUCTURE
+           2. 开场动画 (Loading Sequence)
            ========================================= */
-        .page-section {
-            display: none; /* 默认隐藏所有页面 */
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
-            opacity: 0;
-            transform: scale(0.95);
-        }
-
-        .page-section.active {
-            display: block;
-        }
-
-        /* 苹果风毛玻璃卡片 */
-        .glass-panel {
-            background: var(--glass-base);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-radius: 24px;
-            padding: 30px;
-            margin-bottom: 24px;
-            transition: transform 0.3s, border-color 0.3s;
-        }
-        .glass-panel:hover {
-            border-color: var(--glass-shine);
-            transform: translateY(-2px);
-        }
-
-        h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
-        h1 { font-size: 3rem; margin-bottom: 10px; background: linear-gradient(to bottom, #fff, #999); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        p { line-height: 1.6; color: var(--text-secondary); font-size: 1.05rem; }
-
-        /* =========================================
-           4. PAGE: HOME (Dashboard)
-           ========================================= */
-        .hero-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .profile-header {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        .profile-avatar {
-            width: 80px; height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #333, #666);
-            border: 2px solid rgba(255,255,255,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-        }
-
-        .stat-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 12px;
-            background: rgba(0, 255, 136, 0.1);
-            color: #00ff88;
-            border-radius: 100px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-
-        /* =========================================
-           5. PAGE: UNIVERSE (Physics Lab)
-           ========================================= */
-        #physics-canvas-container {
-            width: 100%;
-            height: 400px;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            position: relative;
-            cursor: crosshair;
-        }
-        .lab-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .btn-lab {
-            padding: 8px 16px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-lab:hover { background: rgba(255,255,255,0.2); }
-
-        /* =========================================
-           6. PAGE: CONTACT (Connect)
-           ========================================= */
-        .contact-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .contact-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 16px;
-            text-decoration: none;
-            color: white;
-            transition: 0.2s;
-            border: 1px solid transparent;
-        }
-        .contact-item:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: rgba(255,255,255,0.1);
-            transform: scale(1.01);
-        }
-
-        /* 加载遮罩 */
         #loader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -262,162 +73,259 @@
             justify-content: center;
             align-items: center;
         }
-        .loader-spinner {
-            width: 40px; height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .loader-text {
+            font-family: "Courier New", monospace;
+            font-size: 14px;
+            letter-spacing: 4px;
+            color: #444;
+            margin-bottom: 20px;
+            text-transform: uppercase;
         }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .loader-bar-bg {
+            width: 200px; height: 1px;
+            background: #222;
+            position: relative;
+        }
+        .loader-bar-fill {
+            position: absolute; left: 0; top: 0; height: 100%; width: 0%;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        /* =========================================
+           3. 导航坞 (Dock)
+           ========================================= */
+        .dock-container {
+            position: fixed;
+            bottom: 30px; left: 50%;
+            transform: translateX(-50%) translateY(100px); /* 初始下沉 */
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 10px 15px;
+            display: flex;
+            gap: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .dock-item {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .dock-item:hover, .dock-item.active {
+            color: #fff;
+            text-shadow: 0 0 15px rgba(255,255,255,0.5);
+            transform: scale(1.1);
+        }
+        /* 选中时的小光点 */
+        .dock-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px; left: 50%; transform: translateX(-50%);
+            width: 4px; height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #fff;
+        }
+
+        /* =========================================
+           4. 页面内容卡片 (Glass Panels)
+           ========================================= */
+        .page-section {
+            display: none;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            margin-top: 40px;
+        }
+        .page-section.active { display: block; }
+
+        .glass-panel {
+            background: var(--glass-base);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+        }
+        .glass-panel:hover { transform: translateY(-2px); border-color: var(--glass-highlight); }
+
+        /* 大标题 */
+        h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            line-height: 1;
+            margin-bottom: 10px;
+            /* 银河渐变字 */
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            color: #64748b;
+            font-weight: 400;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* 标签 */
+        .tag-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+        .tag {
+            font-family: "Courier New", monospace;
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: #94a3b8;
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* 链接列表 */
+        .link-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            text-decoration: none;
+            color: white;
+            transition: 0.2s;
+        }
+        .link-row:last-child { border-bottom: none; }
+        .link-row:hover { padding-left: 10px; }
+        .link-title { font-size: 1.1rem; font-weight: 600; }
+        .link-desc { font-size: 0.9rem; color: #666; }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .glass-panel { padding: 25px; }
+        }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="loader-spinner"></div>
-        <p style="margin-top:20px; font-size:12px; letter-spacing:2px; color:#666">INITIALIZING STARDUST...</p>
+        <div class="loader-text">INITIATING WORMHOLE SEQUENCE...</div>
+        <div class="loader-bar-bg"><div class="loader-bar-fill" id="loader-progress"></div></div>
     </div>
 
     <div id="canvas-world"></div>
 
-    <div class="dock-container">
-        <div class="dock-item active" onclick="Router.nav('home')">
-            <i class="bi bi-grid-fill"></i>
-            <div class="dock-tooltip">Dashboard</div>
-        </div>
-        <div class="dock-item" onclick="Router.nav('universe')">
-            <i class="bi bi-stars"></i>
-            <div class="dock-tooltip">Physics Lab</div>
-        </div>
-        <div class="dock-item" onclick="Router.nav('contact')">
-            <i class="bi bi-person-badge-fill"></i>
-            <div class="dock-tooltip">Contact</div>
-        </div>
+    <div class="dock-container" id="dock">
+        <div class="dock-item active" onclick="Router.nav('home')"><i class="bi bi-house"></i></div>
+        <div class="dock-item" onclick="Router.nav('lab')"><i class="bi bi-infinity"></i></div>
+        <div class="dock-item" onclick="Router.nav('connect')"><i class="bi bi-send"></i></div>
     </div>
 
     <div id="app-container">
-
+        
         <section id="page-home" class="page-section active">
-            <div class="glass-panel profile-header">
-                <div class="profile-avatar">TS</div> <div>
-                    <h1>Tom Shi</h1>
-                    <p>Physics Geek & Web Developer.<br>Exploring the digital cosmos.</p>
-                </div>
-            </div>
-
-            <div class="hero-grid">
-                <div class="glass-panel">
-                    <div class="stat-badge"><i class="bi bi-eye"></i> LIVE</div>
-                    <h3 style="color:#aaa; font-size:0.9rem; text-transform:uppercase; margin-bottom:5px;">Total Observers</h3>
-                    <h2 id="visit-count" style="font-size:2.5rem; font-family:monospace;">----</h2>
-                </div>
-
-                <div class="glass-panel">
-                    <div class="stat-badge" style="background:rgba(10, 132, 255, 0.1); color:#0a84ff"><i class="bi bi-code-slash"></i> STACK</div>
-                    <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                        <span style="padding:5px 10px; background:rgba(255,255,255,0.1); border-radius:50px; font-size:0.8rem;">Physics</span>
-                        <span style="padding:5px 10px; background:rgba(255,255,255,0.1); border-radius:50px; font-size:0.8rem;">JavaScript</span>
-                        <span style="padding:5px 10px; background:rgba(255,255,255,0.1); border-radius:50px; font-size:0.8rem;">Three.js</span>
-                        <span style="padding:5px 10px; background:rgba(255,255,255,0.1); border-radius:50px; font-size:0.8rem;">Supabase</span>
-                    </div>
+            <div class="glass-panel" style="text-align: center; padding: 60px 20px;">
+                <h1 class="hero-title">TOM SHI</h1>
+                <p class="subtitle">Interstellar &middot; Physics &middot; Code</p>
+                
+                <div style="margin-top: 40px; display: inline-flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <div style="font-family: monospace; font-size: 3rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.4);" id="visit-count">0000</div>
+                    <div style="font-size: 0.7rem; letter-spacing: 2px; color: #555; text-transform: uppercase;">Observers Detected</div>
                 </div>
             </div>
 
             <div class="glass-panel">
-                <h3><i class="bi bi-journal-text"></i> Latest Thoughts</h3>
-                <p style="margin-top:10px;">Currently researching fluid dynamics simulations in WebGL. Building the gap between theoretical physics and visual arts.</p>
-                <button onclick="alert('Blog module coming soon!')" style="margin-top:15px; padding:8px 20px; background:rgba(255,255,255,0.1); border:none; color:white; border-radius:8px; cursor:pointer;">Read More</button>
-            </div>
-        </section>
-
-        <section id="page-universe" class="page-section">
-            <div class="glass-panel">
-                <h2>Interactive Gravity Lab</h2>
-                <p style="margin-bottom:20px;">A real-time particle system simulating gravitational forces. Click to create repulsion.</p>
-                
-                <div id="physics-canvas-container">
-                    <canvas id="physics-canvas"></canvas>
-                </div>
-                
-                <div class="lab-controls">
-                    <button class="btn-lab" onclick="PhysicsLab.reset()">Reset Particles</button>
-                    <button class="btn-lab" onclick="PhysicsLab.toggleGravity()">Toggle Gravity</button>
+                <h3 style="margin-bottom: 15px; color: #fff;">Mission Status</h3>
+                <p>Exploring the boundaries between theoretical physics and digital reality. Currently building immersive web experiences.</p>
+                <div class="tag-row">
+                    <span class="tag">REDSHIFT</span>
+                    <span class="tag">RELATIVITY</span>
+                    <span class="tag">WEBGL</span>
+                    <span class="tag">NEXT.JS</span>
                 </div>
             </div>
         </section>
 
-        <section id="page-contact" class="page-section">
+        <section id="page-lab" class="page-section">
             <div class="glass-panel">
-                <h2>Connect</h2>
-                <p style="margin-bottom:20px;">Let's build something impossible together.</p>
-                
-                <div class="contact-list">
-                    <a href="mailto:tom11s@outlook.com" class="contact-item">
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <i class="bi bi-envelope-at" style="font-size:1.5rem;"></i>
-                            <div>
-                                <div style="font-weight:600;">Email</div>
-                                <div style="font-size:0.9rem; color:#888;">tom11s@outlook.com</div>
-                            </div>
-                        </div>
-                        <i class="bi bi-arrow-right-short" style="font-size:1.5rem; opacity:0.5;"></i>
-                    </a>
-
-                    <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="contact-item">
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <i class="bi bi-instagram" style="font-size:1.5rem; color:#E1306C;"></i>
-                            <div>
-                                <div style="font-weight:600;">Instagram</div>
-                                <div style="font-size:0.9rem; color:#888;">@tom.11s</div>
-                            </div>
-                        </div>
-                        <i class="bi bi-arrow-right-short" style="font-size:1.5rem; opacity:0.5;"></i>
-                    </a>
-
-                    <div class="contact-item" onclick="alert('Website under construction. Coming soon!')" style="cursor:pointer; opacity:0.5;">
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <i class="bi bi-globe" style="font-size:1.5rem;"></i>
-                            <div>
-                                <div style="font-weight:600;">Personal Website</div>
-                                <div style="font-size:0.9rem; color:#888;">Coming Soon</div>
-                            </div>
-                        </div>
-                        <i class="bi bi-lock" style="font-size:1.5rem; opacity:0.5;"></i>
-                    </div>
+                <h2 style="margin-bottom: 10px;">The Singularity</h2>
+                <p style="color:#666; margin-bottom: 20px;">"Love is the one thing that transcends time and space."</p>
+                <div style="background: black; height: 200px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px dashed #333;">
+                    <span style="color: #333; font-family: monospace;">[ GRAVITY SIMULATION MODULE READY ]</span>
                 </div>
+            </div>
+        </section>
+
+        <section id="page-connect" class="page-section">
+            <div class="glass-panel">
+                <h2 style="margin-bottom: 20px;">Transmission</h2>
+                
+                <a href="https://tomshi.online" target="_blank" class="link-row">
+                    <div>
+                        <div class="link-title"><i class="bi bi-globe2" style="margin-right: 10px; color: #3b82f6;"></i> Personal Website</div>
+                        <div class="link-desc">tomshi.online</div>
+                    </div>
+                    <i class="bi bi-arrow-up-right"></i>
+                </a>
+
+                <a href="mailto:tom11s@outlook.com" class="link-row">
+                    <div>
+                        <div class="link-title"><i class="bi bi-envelope-at" style="margin-right: 10px; color: #a855f7;"></i> Email</div>
+                        <div class="link-desc">tom11s@outlook.com</div>
+                    </div>
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+
+                <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="link-row">
+                    <div>
+                        <div class="link-title"><i class="bi bi-instagram" style="margin-right: 10px; color: #ec4899;"></i> Instagram</div>
+                        <div class="link-desc">@tom.11s</div>
+                    </div>
+                    <i class="bi bi-arrow-up-right"></i>
+                </a>
             </div>
         </section>
 
     </div>
 
     <script>
-        // 🔴 配置中心
+        // 🔴🔴🔴 填入你的 SUPABASE KEY (保留单引号)
         const CONFIG = {
             supabaseUrl: '你的URL',
             supabaseKey: '你的ANON_KEY',
-            starsCount: 3000,
-            cameraSpeed: 0.05
+            starCount: 4000
         };
 
-        // --- MODULE 1: 3D STARFIELD ENGINE (繁星背景) ---
-        class StarEngine {
+        // --- MODULE 1: INTERSTELLAR ENGINE (红移/蓝移 3D 引擎) ---
+        class Universe {
             constructor() {
                 this.scene = new THREE.Scene();
-                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-                this.camera.position.z = 1;
-                this.camera.rotation.x = Math.PI/2;
+                // 增加迷雾，模拟深空距离感
+                this.scene.fog = new THREE.FogExp2(0x000000, 0.001);
 
-                this.renderer = new THREE.WebGLRenderer({ alpha: true });
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+                this.camera.position.z = 1000; // 摄像机在远处
+
+                this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
                 document.getElementById('canvas-world').appendChild(this.renderer.domElement);
 
                 this.stars = null;
-                this.speed = 0;
-                
+                this.speed = 2; // 默认飞行速度
+
                 this.initStars();
                 this.animate();
-                
+
                 window.addEventListener('resize', () => {
                     this.camera.aspect = window.innerWidth / window.innerHeight;
                     this.camera.updateProjectionMatrix();
@@ -426,223 +334,151 @@
             }
 
             initStars() {
-                const geo = new THREE.BufferGeometry();
-                const pos = [];
-                // 模拟繁星
-                for(let i=0; i<CONFIG.starsCount; i++) {
-                    pos.push(Math.random() * 600 - 300);
-                    pos.push(Math.random() * 600 - 300);
-                    pos.push(Math.random() * 600 - 300);
+                const geometry = new THREE.BufferGeometry();
+                const vertices = [];
+                const colors = [];
+                const colorBlue = new THREE.Color(0x00f2ff); // 蓝移 (靠近)
+                const colorRed = new THREE.Color(0xff0055);  // 红移 (远离)
+
+                for (let i = 0; i < CONFIG.starCount; i++) {
+                    // x, y 随机分布，z 轴拉长形成隧道
+                    const x = (Math.random() - 0.5) * 2000;
+                    const y = (Math.random() - 0.5) * 2000;
+                    const z = Math.random() * 2000;
+                    vertices.push(x, y, z);
+
+                    // 颜色逻辑：根据位置混合红蓝
+                    // 中心偏蓝，边缘偏红
+                    const mixFactor = Math.abs(x) / 1000; 
+                    const starColor = colorBlue.clone().lerp(colorRed, mixFactor);
+                    colors.push(starColor.r, starColor.g, starColor.b);
                 }
-                geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-                
-                const mat = new THREE.PointsMaterial({
-                    color: 0xaaaaaa,
-                    size: 0.7,
+
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 2,
+                    vertexColors: true, // 使用顶点颜色
                     transparent: true,
                     opacity: 0.8
                 });
-                
-                this.stars = new THREE.Points(geo, mat);
-                this.scene.add(this.stars);
-            }
 
-            warp(speed) {
-                // 页面切换时的加速效果
-                gsap.to(this, { speed: speed, duration: 1, ease: "power2.inOut", onComplete: () => {
-                    gsap.to(this, { speed: 0, duration: 2, ease: "power2.out" });
-                }});
+                this.stars = new THREE.Points(geometry, material);
+                this.scene.add(this.stars);
             }
 
             animate() {
                 requestAnimationFrame(this.animate.bind(this));
                 
-                // 恒星自转
-                this.stars.rotation.y += 0.0005 + this.speed;
-                this.stars.velocity += this.speed;
+                const positions = this.stars.geometry.attributes.position.array;
+
+                // 让每一颗星星都向摄像机飞来
+                for (let i = 2; i < positions.length; i += 3) {
+                    positions[i] += this.speed; // Z轴移动
+
+                    // 如果飞过摄像机 (z > 1000)，重置到远处 (z = 0)
+                    if (positions[i] > 1000) {
+                        positions[i] = 0;
+                    }
+                }
+                this.stars.geometry.attributes.position.needsUpdate = true;
+                
+                // 微微旋转，增加晕眩感
+                this.stars.rotation.z += 0.001;
 
                 this.renderer.render(this.scene, this.camera);
             }
+
+            // 虫洞穿梭特效
+            warp() {
+                // GSAP 动画：速度瞬间变大，然后变回正常
+                gsap.to(this, { speed: 50, duration: 0.5, ease: "power2.in", onComplete: () => {
+                    gsap.to(this, { speed: 2, duration: 1.5, ease: "power2.out" });
+                }});
+            }
         }
 
-        // --- MODULE 2: SPA ROUTER (页面路由系统) ---
+        // --- MODULE 2: ROUTER (路由) ---
         const Router = {
             current: 'home',
-            engine: null, // 引用 3D 引擎
+            engine: null,
+            
+            init(engine) { this.engine = engine; },
 
-            init(engineRef) {
-                this.engine = engineRef;
-                // 默认显示 Home
-                this.show('home');
-            },
-
-            nav(targetId) {
-                if (targetId === this.current) return;
+            nav(target) {
+                if(target === this.current) return;
                 
-                // 1. 更新底部导航栏 UI
+                // UI 更新
                 document.querySelectorAll('.dock-item').forEach(el => el.classList.remove('active'));
                 event.currentTarget.classList.add('active');
 
-                // 2. 触发 3D 穿梭特效
-                if(this.engine) this.engine.warp(0.02);
+                // 触发虫洞
+                this.engine.warp();
 
-                // 3. 页面转场动画
-                const currentEl = document.getElementById(`page-${this.current}`);
-                const nextEl = document.getElementById(`page-${targetId}`);
+                // 页面切换
+                const currEl = document.getElementById(`page-${this.current}`);
+                const nextEl = document.getElementById(`page-${target}`);
 
-                // 退出动画
-                gsap.to(currentEl, {
-                    opacity: 0,
-                    scale: 0.95,
-                    duration: 0.4,
-                    onComplete: () => {
-                        currentEl.classList.remove('active');
-                        nextEl.classList.add('active');
-                        
-                        // 进入动画
-                        gsap.fromTo(nextEl, 
-                            { opacity: 0, scale: 1.05 },
-                            { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.2)" }
-                        );
-                        
-                        // 如果进入的是物理实验室，启动物理引擎
-                        if(targetId === 'universe') PhysicsLab.start();
-                    }
-                });
+                gsap.to(currEl, { opacity: 0, y: -20, duration: 0.3, onComplete: () => {
+                    currEl.classList.remove('active');
+                    nextEl.classList.add('active');
+                    gsap.fromTo(nextEl, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 });
+                }});
 
-                this.current = targetId;
-            },
-
-            show(id) {
-                document.getElementById(`page-${id}`).classList.add('active');
-                gsap.fromTo(`#page-${id}`, {opacity:0, y:20}, {opacity:1, y:0, duration:0.8});
+                this.current = target;
             }
         };
 
-        // --- MODULE 3: PHYSICS LAB (嵌入式物理引擎) ---
-        const PhysicsLab = {
-            canvas: null,
-            ctx: null,
-            particles: [],
-            animationId: null,
-            running: false,
-            
-            start() {
-                if (this.running) return;
-                this.canvas = document.getElementById('physics-canvas');
-                this.ctx = this.canvas.getContext('2d');
-                
-                // 设置画布大小
-                const container = document.getElementById('physics-canvas-container');
-                this.canvas.width = container.offsetWidth;
-                this.canvas.height = container.offsetHeight;
-
-                this.reset();
-                this.running = true;
-                this.loop();
-
-                // 交互监听
-                this.canvas.addEventListener('mousemove', e => {
-                    const rect = this.canvas.getBoundingClientRect();
-                    this.mouse.x = e.clientX - rect.left;
-                    this.mouse.y = e.clientY - rect.top;
-                });
-            },
-
-            mouse: { x: -100, y: -100 },
-            
-            reset() {
-                this.particles = [];
-                for(let i=0; i<100; i++) {
-                    this.particles.push({
-                        x: Math.random() * this.canvas.width,
-                        y: Math.random() * this.canvas.height,
-                        vx: (Math.random() - 0.5) * 2,
-                        vy: (Math.random() - 0.5) * 2,
-                        size: Math.random() * 3 + 1,
-                        color: `hsl(${Math.random()*60 + 200}, 70%, 50%)`
-                    });
-                }
-            },
-
-            toggleGravity() {
-                alert("Simulating Gravity Inversion... (Visual Only)");
-            },
-
-            loop() {
-                if (!this.running) return;
-                this.ctx.fillStyle = 'rgba(0,0,0,0.1)';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-                this.particles.forEach(p => {
-                    // 简单的引力逻辑
-                    const dx = this.mouse.x - p.x;
-                    const dy = this.mouse.y - p.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    
-                    if (dist < 200) {
-                        p.vx += dx * 0.0005;
-                        p.vy += dy * 0.0005;
-                    }
-
-                    p.x += p.vx;
-                    p.y += p.vy;
-
-                    // 边界反弹
-                    if(p.x < 0 || p.x > this.canvas.width) p.vx *= -1;
-                    if(p.y < 0 || p.y > this.canvas.height) p.vy *= -1;
-
-                    this.ctx.beginPath();
-                    this.ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-                    this.ctx.fillStyle = p.color;
-                    this.ctx.fill();
-                });
-
-                requestAnimationFrame(this.loop.bind(this));
-            }
-        };
-
-        // --- MODULE 4: BACKEND (Supabase 数据) ---
+        // --- MODULE 3: BACKEND (计数器) ---
         async function initBackend() {
             try {
-                const supabaseClient = supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+                const sb = supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
                 const el = document.getElementById('visit-count');
-
-                // +1
-                await supabaseClient.rpc('increment_visits', { page_id: 'home_page' });
-                // 获取
-                const { data } = await supabaseClient.from('site_stats').select('visits').eq('id', 'home_page').single();
                 
-                if (data) {
-                    // 数字动画
+                // 增加
+                await sb.rpc('increment_visits', { page_id: 'home_page' });
+                // 读取
+                const { data } = await sb.from('site_stats').select('visits').eq('id', 'home_page').single();
+                
+                if(data) {
+                    // 数字滚动
                     let obj = { val: 0 };
                     gsap.to(obj, {
-                        val: data.visits,
-                        duration: 2,
-                        ease: "power2.out",
-                        onUpdate: () => { el.innerText = Math.floor(obj.val).toString().padStart(4,'0'); }
+                        val: data.visits, duration: 2, ease: "circ.out",
+                        onUpdate: () => el.innerText = Math.floor(obj.val).toString().padStart(4, '0')
                     });
                 }
-            } catch (e) {
-                console.log("Offline Mode");
-            }
+            } catch(e) { console.log("Offline"); }
         }
 
-        // --- SYSTEM INIT (启动) ---
+        // --- INIT SEQUENCE (开场) ---
         window.onload = () => {
-            // 0. 移除加载动画
-            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
-            
-            // 1. 启动 3D 引擎
-            const engine = new StarEngine();
-            
-            // 2. 启动路由
-            Router.init(engine);
-            
-            // 3. 连接后端
-            initBackend();
-        };
+            const bar = document.getElementById('loader-progress');
+            const loader = document.getElementById('loader');
+            const canvas = document.getElementById('canvas-world');
+            const app = document.getElementById('app-container');
+            const dock = document.getElementById('dock');
 
+            // 1. 进度条动画
+            gsap.to(bar, { width: "100%", duration: 1.5, ease: "power2.inOut", onComplete: () => {
+                
+                // 2. 隐藏 Loader
+                gsap.to(loader, { opacity: 0, duration: 0.8, onComplete: () => loader.style.display = 'none' });
+                
+                // 3. 显示宇宙
+                canvas.style.opacity = 1;
+                const universe = new Universe();
+                Router.init(universe);
+
+                // 4. UI 入场
+                gsap.to(app, { opacity: 1, duration: 1, delay: 0.5 });
+                gsap.to(dock, { y: 0, duration: 1, delay: 0.8, ease: "back.out(1.7)" });
+
+                // 5. 启动后端
+                initBackend();
+            }});
+        };
     </script>
 </body>
 </html>
