@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tom Shi</title>
+    <title>Tom Shi - Pro</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- 引入 Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -15,12 +14,12 @@
            ========================================= */
         :root {
             --bg-color: #000000;
-            --card-bg: #161617; /* 苹果官网常用的深灰 */
+            --card-bg: #1d1d1f;
             --text-primary: #f5f5f7;
             --text-secondary: #86868b;
             --accent-blue: #2997ff;
-            --divider: rgba(255,255,255,0.1);
-            --font-stack: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --divider: #424245;
+            --font-stack: "SF Pro Display", -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
@@ -30,403 +29,418 @@
             color: var(--text-primary);
             font-family: var(--font-stack);
             overflow-x: hidden;
+            /* 钛金属深空背景 */
+            background-image: radial-gradient(circle at 50% 0%, #2a2a2e 0%, #000000 80%);
+            min-height: 100vh;
         }
 
-        /* 顶部导航栏 (毛玻璃) */
+        /* 顶部导航栏 */
         nav {
-            position: fixed;
+            position: sticky;
             top: 0; left: 0; width: 100%;
-            height: 48px;
-            background: rgba(0,0,0,0.8);
+            height: 52px;
+            background: rgba(29, 29, 31, 0.72);
             backdrop-filter: saturate(180%) blur(20px);
             -webkit-backdrop-filter: saturate(180%) blur(20px);
             z-index: 999;
             display: flex;
             justify-content: center;
-            align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
         }
         .nav-content {
-            width: 1000px; max-width: 90%;
+            width: 980px; max-width: 92%;
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 12px; color: #e8e8ed;
+            font-size: 12px;
         }
-        .nav-logo { font-weight: 600; letter-spacing: 0.5px; opacity: 0.8; transition: 0.3s; }
-        .nav-logo:hover { opacity: 1; }
+        .nav-logo { font-weight: 600; font-size: 14px; color: #fff; text-decoration: none; letter-spacing: 0.5px; }
         .nav-links { display: flex; gap: 24px; }
-        .nav-item { cursor: pointer; color: #e8e8ed; transition: 0.3s; text-decoration: none; opacity: 0.8; }
+        .nav-item { color: #e8e8ed; text-decoration: none; opacity: 0.8; transition: 0.3s; cursor: pointer; }
         .nav-item:hover { opacity: 1; color: var(--accent-blue); }
 
-        /* 通用容器 */
         .container {
-            width: 1000px;
-            max-width: 88%;
+            width: 980px;
+            max-width: 90%;
             margin: 0 auto;
         }
 
         /* =========================================
-           2. Hero Section (首屏大字)
+           2. Hero Section
            ========================================= */
         .hero {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            padding: 140px 0 100px;
             text-align: center;
-            padding-top: 60px;
         }
-
-        /* 极致的排版 */
         h1 {
-            font-size: 5rem; /* 巨大字号 */
-            font-weight: 600;
+            font-size: 64px;
+            font-weight: 700;
             line-height: 1.05;
             letter-spacing: -0.015em;
-            background: linear-gradient(180deg, #fff 0%, #a1a1a6 100%); /* 钛金属渐变 */
+            margin-bottom: 24px;
+            /* 钛金属光泽渐变字 */
+            background: linear-gradient(135deg, #ffffff 0%, #a1a1a6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-            opacity: 0; /* 初始隐藏，交给GSAP */
-            transform: translateY(30px);
         }
-
         .hero-desc {
-            font-size: 1.7rem;
-            color: var(--text-secondary);
-            font-weight: 400;
-            max-width: 600px;
+            font-size: 24px;
             line-height: 1.4;
-            opacity: 0;
-            transform: translateY(30px);
+            font-weight: 400;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin: 0 auto 40px;
         }
-
-        /* 那个“了解更多”的链接 */
-        .cta-link {
-            margin-top: 30px;
-            color: var(--accent-blue);
-            font-size: 1.2rem;
-            text-decoration: none;
-            display: flex; align-items: center; gap: 5px;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        .cta-link:hover { text-decoration: underline; }
 
         /* =========================================
-           3. Bento Grid (便当盒布局)
+           3. Bento Grid (优化版布局)
            ========================================= */
-        .grid-section {
-            padding: 100px 0;
-            background: #000;
-        }
-
         .bento-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 400px);
-            gap: 24px;
+            grid-template-rows: auto;
+            gap: 20px;
+            margin-bottom: 80px;
         }
 
-        /* 卡片基础 */
         .tile {
             background: var(--card-bg);
-            border-radius: 30px;
-            padding: 40px;
+            border-radius: 28px;
+            padding: 35px;
             position: relative;
             overflow: hidden;
-            transition: transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
             display: flex; flex-direction: column; justify-content: space-between;
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            min-height: 420px;
         }
-        .tile:hover { transform: scale(1.02); }
+        .tile:hover { transform: scale(1.02); z-index: 2; box-shadow: 0 30px 60px rgba(0,0,0,0.4); }
 
-        /* 卡片标题体系 */
-        .tile-subtitle { font-size: 12px; font-weight: 600; color: #86868b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-        .tile-title { font-size: 28px; font-weight: 600; color: #f5f5f7; line-height: 1.2; }
-        .tile-text { font-size: 17px; color: #86868b; margin-top: 10px; line-height: 1.5; }
+        /* 卡片尺寸控制 */
+        .tile-large { grid-column: span 2; }
+        .tile-small { grid-column: span 1; }
 
-        /* 特殊卡片样式 */
-        .tile-large { grid-column: span 2; } /* 宽卡片 */
-        
-        /* 计数器卡片 */
-        .counter-display {
-            font-size: 80px; font-weight: 700;
-            color: #fff;
-            letter-spacing: -2px;
+        /* 内容样式 */
+        .tile-subtitle { font-size: 11px; font-weight: 600; color: #86868b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .tile-title { font-size: 32px; font-weight: 600; color: #f5f5f7; line-height: 1.1; margin-bottom: 15px; }
+        .tile-text { font-size: 17px; color: #86868b; line-height: 1.5; font-weight: 400; }
+
+        /* 计数器 */
+        .counter-num {
+            font-size: 68px; font-weight: 700; color: #fff;
+            letter-spacing: -2px; margin-top: auto;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 链接列表 (新版) */
+        .contact-list {
             margin-top: auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
         }
+        .contact-btn {
+            display: flex; align-items: center; justify-content: center;
+            height: 50px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            color: #fff; text-decoration: none;
+            font-size: 15px; font-weight: 500;
+            transition: 0.2s;
+        }
+        .contact-btn:hover { background: #fff; color: #000; }
 
-        /* 标签组 */
-        .pill-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-        .pill {
-            padding: 8px 16px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 20px;
-            font-size: 14px;
-            color: #f5f5f7;
-            font-weight: 500;
+        /* 兴趣标签 */
+        .tag-container { display: flex; flex-direction: column; gap: 12px; margin-top: auto; }
+        .tag {
+            font-size: 15px; color: #f5f5f7; display: flex; align-items: center; gap: 8px;
+            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
         }
+        .tag:last-child { border: none; }
 
         /* =========================================
-           4. Message Board (iMessage 风格)
+           4. 留言板 & 底部
            ========================================= */
         .message-section {
-            padding: 100px 0;
-            background: #000;
-            border-top: 1px solid var(--divider);
+            padding: 80px 0;
+            background: #121212;
+            border-radius: 32px;
+            margin-bottom: 50px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .ios-input-group {
-            position: relative;
-            width: 100%; max-width: 600px; margin: 40px auto;
-        }
+        .ios-input-group { position: relative; width: 100%; max-width: 520px; margin: 30px auto; }
         
-        /* 苹果风输入框 */
         .ios-input {
             width: 100%;
-            background: #1c1c1e;
-            border: 1px solid #333;
-            padding: 18px 20px;
-            padding-right: 50px;
-            border-radius: 12px;
+            background: #252527;
+            border: 1px solid #3a3a3c;
+            padding: 18px 24px;
+            padding-right: 60px;
+            border-radius: 24px;
             color: white;
             font-size: 17px;
             outline: none;
             transition: 0.3s;
         }
-        .ios-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(41, 151, 255, 0.15); }
-
+        .ios-input:focus { border-color: var(--accent-blue); background: #2c2c2e; }
+        
         .ios-send-btn {
             position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-            width: 30px; height: 30px;
+            width: 36px; height: 36px;
             background: var(--accent-blue);
             border-radius: 50%;
             border: none;
             color: white;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
+            font-weight: 600; cursor: pointer;
             transition: 0.2s;
         }
-        .ios-send-btn:hover { background: #0077ED; }
+        .ios-send-btn:hover { transform: translateY(-50%) scale(1.05); }
 
         .message-list {
-            max-width: 600px; margin: 0 auto;
-            display: flex; flex-direction: column; gap: 20px;
+            max-width: 520px; margin: 0 auto; text-align: left;
+            display: flex; flex-direction: column; gap: 16px;
         }
-        
         .msg-bubble {
-            background: #1c1c1e;
-            padding: 16px 20px;
+            background: #252527;
+            padding: 14px 20px;
             border-radius: 20px;
-            border-bottom-left-radius: 4px; /* 气泡角 */
+            border-bottom-left-radius: 4px;
             color: #f5f5f7;
             font-size: 16px;
-            line-height: 1.5;
+            line-height: 1.4;
             align-self: flex-start;
-            max-width: 80%;
+            max-width: 90%;
             animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .msg-date {
-            font-size: 12px; color: #555; margin-top: 5px; display: block;
-        }
-
         @keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-        /* =========================================
-           5. Footer
-           ========================================= */
-        footer {
-            padding: 50px 0;
-            border-top: 1px solid var(--divider);
+        /* 格言区域 */
+        .quote-section {
             text-align: center;
+            margin-bottom: 60px;
+            padding: 40px 20px;
+            border-top: 1px solid var(--divider);
+            border-bottom: 1px solid var(--divider);
+        }
+        .quote-text {
+            font-family: "Songti SC", "SimSun", serif; /* 宋体，更有古诗韵味 */
+            font-size: 24px;
+            color: #d1d1d6;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        .quote-author {
+            font-size: 14px;
             color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            color: #6e6e73;
             font-size: 12px;
         }
 
         /* 移动端适配 */
         @media (max-width: 768px) {
-            h1 { font-size: 3.5rem; }
-            .bento-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
-            .tile-large { grid-column: span 1; }
-            .tile { min-height: 300px; }
+            h1 { font-size: 40px; }
+            .bento-grid { grid-template-columns: 1fr; }
+            .tile-large, .tile-small { grid-column: span 1; }
+            .tile { min-height: 300px; height: auto; }
+            .contact-list { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
+    <!-- 导航 -->
     <nav>
         <div class="nav-content">
-            <div class="nav-logo">Tom Shi</div>
+            <a href="#" class="nav-logo">Tom Shi</a>
             <div class="nav-links">
                 <a href="#about" class="nav-item">关于</a>
+                <a href="#contact" class="nav-item">联系</a>
                 <a href="#board" class="nav-item">留言</a>
-                <a href="mailto:tom11s@outlook.com" class="nav-item">联系</a>
             </div>
         </div>
     </nav>
 
-    <section class="hero">
-        <h1 class="gsap-hero">Tom Shi.</h1>
-        <h1 class="gsap-hero" style="background: linear-gradient(180deg, #86868b 0%, #3e3e42 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Developer. Thinker.</h1>
-        <p class="hero-desc gsap-hero">
-            探索物理法则与数字逻辑的边界。<br>
-            以极简代码，构建复杂世界。
-        </p>
-        <a href="#about" class="cta-link gsap-hero">进一步了解 ></a>
-    </section>
+    <div class="container">
+        <!-- Hero -->
+        <section class="hero">
+            <h1 class="gsap-hero">Tom Shi.</h1>
+            <p class="hero-desc gsap-hero">
+                Developer. Thinker. Explorer.<br>
+                在物理法则与数字逻辑之间构建世界。
+            </p>
+        </section>
 
-    <section id="about" class="grid-section">
-        <div class="container">
-            <div class="bento-grid">
-                
-                <div class="tile tile-large scroll-fade">
-                    <div class="tile-subtitle">简介</div>
-                    <div class="tile-title">不仅仅是代码。</div>
+        <!-- Bento Grid -->
+        <div id="about" class="bento-grid">
+            
+            <!-- 1. 简介 (大卡片) -->
+            <div class="tile tile-large scroll-fade">
+                <div>
+                    <div class="tile-subtitle">Profile</div>
+                    <div class="tile-title">Simplicity is the ultimate sophistication.</div>
                     <div class="tile-text">
-                        我是一名热衷于物理学和 Web 开发的独立创造者。我相信最好的技术应当像魔法一样，不仅运行精确，而且优雅、无感。
-                    </div>
-                    <div class="pill-group">
-                        <span class="pill">Physics</span>
-                        <span class="pill">Web Development</span>
-                        <span class="pill">Mathematics</span>
+                        你好，我是 Tom。我热衷于物理学与 Web 开发。<br><br>
+                        在这个熵增的宇宙里，我试图用代码构建有序的结构。我相信优秀的技术应当像物理定律一样，简洁、普适且充满美感。
                     </div>
                 </div>
+            </div>
 
-                <div class="tile scroll-fade" style="background: #000; border: 1px solid #333;">
-                    <div>
-                        <div class="tile-subtitle" style="color: var(--accent-blue);">实时观测</div>
-                        <div class="tile-title">访客数据</div>
-                    </div>
-                    <div class="counter-display" id="visit-count">----</div>
+            <!-- 2. 计数器 (小卡片) -->
+            <div class="tile tile-small scroll-fade" style="background: #000; border: 1px solid #333;">
+                <div class="tile-subtitle" style="color: var(--accent-blue);">Real-time</div>
+                <div class="tile-title">累计访问</div>
+                <div class="counter-num" id="visit-count">----</div>
+            </div>
+
+            <!-- 3. 探索领域 (小卡片 - 已缩小) -->
+            <div class="tile tile-small scroll-fade">
+                <div class="tile-subtitle">Interests</div>
+                <div class="tile-title">聚焦</div>
+                <div class="tag-container">
+                    <div class="tag"><span style="color: #bf5af2">⚛️</span> Quantum Physics</div>
+                    <div class="tag"><span style="color: #0a84ff">💻</span> Web Development</div>
+                    <div class="tag"><span style="color: #ff375f">🚀</span> Space Exploration</div>
                 </div>
+            </div>
 
-                <div class="tile scroll-fade">
-                    <div class="tile-subtitle">连接</div>
+            <!-- 4. 保持联络 (大卡片 - 已放大并添加锚点) -->
+            <div class="tile tile-large scroll-fade" id="contact" style="background: linear-gradient(135deg, #1d1d1f 0%, #2c2c2e 100%);">
+                <div>
+                    <div class="tile-subtitle">Connect</div>
                     <div class="tile-title">保持联络。</div>
-                    <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 15px;">
-                        <a href="https://tomshi.online" target="_blank" style="text-decoration: none; color: white; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 10px;">个人主页 ↗</a>
-                        <a href="mailto:tom11s@outlook.com" style="text-decoration: none; color: white; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 10px;">发送邮件 ↗</a>
-                        <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" style="text-decoration: none; color: white; font-size: 18px;">Instagram ↗</a>
-                    </div>
+                    <div class="tile-text">随时欢迎交流技术、物理或任何有趣的想法。</div>
                 </div>
-
-                <div class="tile tile-large scroll-fade" style="background: linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 100%);">
-                    <div class="tile-subtitle">理念</div>
-                    <div class="tile-title">Think Different.</div>
-                    <div class="tile-text">
-                        "The people who are crazy enough to think they can change the world are the ones who do."
-                    </div>
+                <div class="contact-list">
+                    <a href="https://tomshi.online" target="_blank" class="contact-btn">个人网站 ↗</a>
+                    <a href="mailto:tom11s@outlook.com" class="contact-btn">Email ↗</a>
+                    <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="contact-btn">Instagram ↗</a>
+                    <a href="#" class="contact-btn" style="opacity: 0.5; cursor: default;">更多即将到来...</a>
                 </div>
-
             </div>
+
         </div>
-    </section>
 
-    <section id="board" class="message-section">
-        <div class="container">
-            <div style="text-align: center; margin-bottom: 60px;" class="scroll-fade">
-                <h2 style="font-size: 48px; font-weight: 600;">留言板.</h2>
-                <p style="color: var(--text-secondary); margin-top: 10px;">你的声音，云端永存。</p>
-            </div>
+        <!-- 留言板 -->
+        <div id="board" class="message-section scroll-fade">
+            <h2 style="font-size: 32px; font-weight: 600; margin-bottom: 10px; color: #f5f5f7;">留言板</h2>
+            <p style="color: #86868b; margin-bottom: 30px;">你的声音，云端永存。</p>
 
-            <div class="ios-input-group scroll-fade">
+            <div class="ios-input-group">
                 <input type="text" id="msg-input" class="ios-input" placeholder="输入消息..." onkeypress="if(event.keyCode==13) sendMsg()">
                 <button class="ios-send-btn" onclick="sendMsg()">↑</button>
             </div>
 
             <div id="msg-list" class="message-list">
-                <div style="text-align: center; color: #333;">Loading...</div>
+                <div style="text-align: center; color: #444;">Loading...</div>
             </div>
         </div>
-    </section>
 
-    <footer>
-        <div class="container">
-            Copyright © 2024 Tom Shi. All rights reserved. <br>
+        <footer>
+            Copyright © <span id="year"></span> Tom Shi. All rights reserved. <br>
             Designed in Apple Style.
-        </div>
-    </footer>
+        </footer>
+    </div>
 
+    <!-- 引入 GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- 逻辑脚本 -->
     <script>
-        // 🔴🔴🔴 填入 Supabase Key (保留单引号)
+        // 🔴🔴🔴 请在此处填入 Supabase URL 和 Key
         const CONFIG = {
             url: '你的URL',
             key: '你的ANON_KEY'
         };
 
-        const sb = supabase.createClient(CONFIG.url, CONFIG.key);
+        // 自动更新年份
+        document.getElementById('year').innerText = new Date().getFullYear();
 
-        // 1. 动效引擎 (GSAP Animation)
+        let sb = null;
+
+        // 安全初始化 Supabase
+        function initSupabase() {
+            if (!CONFIG.url || CONFIG.url.includes('你的URL')) {
+                return null;
+            }
+            try {
+                return supabase.createClient(CONFIG.url, CONFIG.key);
+            } catch (e) { return null; }
+        }
+
         window.onload = () => {
-            gsap.registerPlugin(ScrollTrigger);
+            initAnimations();
+            sb = initSupabase();
 
-            // Hero 进场动画
-            gsap.to(".gsap-hero", {
-                opacity: 1,
-                y: 0,
-                duration: 1,
-                stagger: 0.2, // 逐个出现
-                ease: "power3.out"
-            });
-
-            // 滚动渐入动画
-            gsap.utils.toArray('.scroll-fade').forEach(el => {
-                gsap.from(el, {
-                    scrollTrigger: {
-                        trigger: el,
-                        start: "top 85%", // 当元素顶部到达视口 85% 处触发
-                        toggleActions: "play none none reverse"
-                    },
-                    opacity: 0,
-                    y: 50,
-                    duration: 0.8,
-                    ease: "power3.out"
-                });
-            });
-
-            initData();
-            loadMessages();
+            if (sb) {
+                initStats();
+                loadMessages();
+            } else {
+                // 静默失败，不显示报错信息，只显示占位符
+                document.getElementById('msg-list').innerHTML = '<div style="text-align: center; color: #444; font-size: 13px;">(暂未连接数据库)</div>';
+            }
         };
 
-        // 2. 计数器逻辑
-        async function initData() {
+        // 动画逻辑
+        function initAnimations() {
+            gsap.registerPlugin(ScrollTrigger);
+            
+            // 英雄标题进场
+            gsap.from(".gsap-hero", {
+                opacity: 0, y: 30, duration: 1, stagger: 0.2, ease: "power3.out"
+            });
+
+            // 滚动渐入
+            gsap.utils.toArray('.scroll-fade').forEach(el => {
+                gsap.from(el, {
+                    scrollTrigger: { trigger: el, start: "top 85%" },
+                    opacity: 0, y: 40, duration: 0.8, ease: "power3.out"
+                });
+            });
+        }
+
+        // 计数器
+        async function initStats() {
             try {
                 await sb.rpc('increment_visits', { page_id: 'home_page' });
                 const { data } = await sb.from('site_stats').select('visits').eq('id', 'home_page').single();
-                
                 if (data) {
                     const el = document.getElementById('visit-count');
                     let obj = { val: 0 };
-                    // 数字滚动动画
                     gsap.to(obj, {
-                        val: data.visits,
-                        duration: 2,
-                        ease: "power4.out",
-                        onUpdate: () => el.innerText = Math.floor(obj.val).toLocaleString() // 加千分位逗号
+                        val: data.visits, duration: 2, ease: "power4.out",
+                        onUpdate: () => el.innerText = Math.floor(obj.val).toLocaleString()
                     });
                 }
             } catch(e) {}
         }
 
-        // 3. 留言板逻辑
+        // 留言板
         async function loadMessages() {
             const list = document.getElementById('msg-list');
-            const { data, error } = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(10);
+            const { data } = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(10);
             
-            if (error) {
-                list.innerHTML = '<div style="text-align:center; color:#333;">无法连接服务器</div>';
+            if (!data || data.length === 0) {
+                list.innerHTML = '<div style="text-align: center; color: #444;">暂无留言，抢个沙发？</div>';
                 return;
             }
 
             list.innerHTML = data.map(msg => `
                 <div class="msg-bubble">
                     ${msg.content.replace(/</g, "&lt;")}
-                    <span class="msg-date">${new Date(msg.created_at).toLocaleDateString()}</span>
+                    <span class="msg-time">${new Date(msg.created_at).toLocaleDateString()}</span>
                 </div>
             `).join('');
         }
 
         async function sendMsg() {
+            if (!sb) { alert('请先配置 Supabase Key'); return; }
             const input = document.getElementById('msg-input');
             const text = input.value.trim();
             if(!text) return;
