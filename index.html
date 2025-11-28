@@ -2,557 +2,443 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tom Shi | 星际终端</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tom Shi</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
         /* =========================================
-           1. 视觉设计系统 (Visual System)
+           1. Apple Design System (设计规范)
            ========================================= */
         :root {
-            --bg-color: #050505;
-            --glass-base: rgba(20, 20, 25, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-highlight: rgba(255, 255, 255, 0.15);
-            --text-primary: #ffffff;
-            --text-secondary: #aaaaaa;
-            --accent-blue: #00f2ff; /* 蓝移色 */
-            --accent-red: #ff0055;  /* 红移色 */
-            --font-stack: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+            --bg-color: #000000;
+            --card-bg: #161617; /* 苹果官网常用的深灰 */
+            --text-primary: #f5f5f7;
+            --text-secondary: #86868b;
+            --accent-blue: #2997ff;
+            --divider: rgba(255,255,255,0.1);
+            --font-stack: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-primary);
             font-family: var(--font-stack);
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
+            overflow-x: hidden;
         }
 
-        /* 3D 宇宙层 */
-        #canvas-world {
+        /* 顶部导航栏 (毛玻璃) */
+        nav {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0;
-            opacity: 0;
-            transition: opacity 1.5s ease;
+            top: 0; left: 0; width: 100%;
+            height: 48px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .nav-content {
+            width: 1000px; max-width: 90%;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px; color: #e8e8ed;
+        }
+        .nav-logo { font-weight: 600; letter-spacing: 0.5px; opacity: 0.8; transition: 0.3s; }
+        .nav-logo:hover { opacity: 1; }
+        .nav-links { display: flex; gap: 24px; }
+        .nav-item { cursor: pointer; color: #e8e8ed; transition: 0.3s; text-decoration: none; opacity: 0.8; }
+        .nav-item:hover { opacity: 1; color: var(--accent-blue); }
+
+        /* 通用容器 */
+        .container {
+            width: 1000px;
+            max-width: 88%;
+            margin: 0 auto;
         }
 
-        /* UI 滚动容器 */
-        #app-container {
-            position: relative;
-            z-index: 10;
-            width: 100%; height: 100%;
+        /* =========================================
+           2. Hero Section (首屏大字)
+           ========================================= */
+        .hero {
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            padding-bottom: 120px; /* 留出底部导航空间 */
-            overflow-y: auto;
-            scroll-behavior: smooth;
-            opacity: 0;
-        }
-        #app-container::-webkit-scrollbar { width: 0; }
-
-        /* =========================================
-           2. 导航坞 (Dock) - 类似 iOS 底部条
-           ========================================= */
-        .dock-container {
-            position: fixed;
-            bottom: 30px; left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            z-index: 100;
-            background: rgba(10, 10, 10, 0.7);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--glass-border);
-            border-radius: 100px;
-            padding: 12px 20px;
-            display: flex;
-            gap: 25px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            transition: 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        .dock-item {
-            font-size: 1.5rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            display: flex;
-            align-items: center;
             justify-content: center;
-        }
-        .dock-item:hover, .dock-item.active {
-            color: #fff;
-            transform: translateY(-3px) scale(1.1);
-            text-shadow: 0 0 15px rgba(255,255,255,0.6);
-        }
-        /* 选中光点 */
-        .dock-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: -8px; left: 50%; transform: translateX(-50%);
-            width: 4px; height: 4px;
-            background: #fff;
-            border-radius: 50%;
-            box-shadow: 0 0 8px #fff;
+            align-items: center;
+            text-align: center;
+            padding-top: 60px;
         }
 
-        /* =========================================
-           3. 通用卡片 (Glass Panels)
-           ========================================= */
-        .page-section {
-            display: none;
-            width: 100%;
-            max-width: 800px;
-            margin: 40px auto 0;
-        }
-        .page-section.active { display: block; }
-
-        .glass-panel {
-            background: var(--glass-base);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border-radius: 24px;
-            padding: 40px;
-            margin-bottom: 24px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-            transition: transform 0.3s, border-color 0.3s;
-        }
-        .glass-panel:hover {
-            transform: translateY(-2px);
-            border-color: var(--glass-highlight);
-        }
-
-        /* 文字排版 */
+        /* 极致的排版 */
         h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-            line-height: 1.1;
-            margin-bottom: 10px;
-            /* 银河渐变 */
-            background: linear-gradient(135deg, #fff 0%, #b0c4de 100%);
+            font-size: 5rem; /* 巨大字号 */
+            font-weight: 600;
+            line-height: 1.05;
+            letter-spacing: -0.015em;
+            background: linear-gradient(180deg, #fff 0%, #a1a1a6 100%); /* 钛金属渐变 */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-        h2 { font-size: 1.8rem; margin-bottom: 20px; font-weight: 700; color: #fff; }
-        p { line-height: 1.8; color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 15px; }
-        
-        .subtitle {
-            font-size: 1rem;
-            color: var(--accent-blue);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-            font-weight: 600;
+            margin-bottom: 20px;
+            opacity: 0; /* 初始隐藏，交给GSAP */
+            transform: translateY(30px);
         }
 
-        /* 标签 */
-        .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 25px; }
-        .tag {
-            font-size: 0.85rem;
-            padding: 6px 14px;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 6px;
-            color: #ccc;
-            background: rgba(255,255,255,0.03);
-            transition: 0.3s;
+        .hero-desc {
+            font-size: 1.7rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            max-width: 600px;
+            line-height: 1.4;
+            opacity: 0;
+            transform: translateY(30px);
         }
-        .tag:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: var(--accent-blue); }
+
+        /* 那个“了解更多”的链接 */
+        .cta-link {
+            margin-top: 30px;
+            color: var(--accent-blue);
+            font-size: 1.2rem;
+            text-decoration: none;
+            display: flex; align-items: center; gap: 5px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .cta-link:hover { text-decoration: underline; }
 
         /* =========================================
-           4. 留言板样式 (Message Board)
+           3. Bento Grid (便当盒布局)
            ========================================= */
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
+        .grid-section {
+            padding: 100px 0;
+            background: #000;
         }
-        .glass-input {
-            flex: 1;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 15px;
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 400px);
+            gap: 24px;
+        }
+
+        /* 卡片基础 */
+        .tile {
+            background: var(--card-bg);
+            border-radius: 30px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .tile:hover { transform: scale(1.02); }
+
+        /* 卡片标题体系 */
+        .tile-subtitle { font-size: 12px; font-weight: 600; color: #86868b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+        .tile-title { font-size: 28px; font-weight: 600; color: #f5f5f7; line-height: 1.2; }
+        .tile-text { font-size: 17px; color: #86868b; margin-top: 10px; line-height: 1.5; }
+
+        /* 特殊卡片样式 */
+        .tile-large { grid-column: span 2; } /* 宽卡片 */
+        
+        /* 计数器卡片 */
+        .counter-display {
+            font-size: 80px; font-weight: 700;
+            color: #fff;
+            letter-spacing: -2px;
+            margin-top: auto;
+        }
+
+        /* 标签组 */
+        .pill-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .pill {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 14px;
+            color: #f5f5f7;
+            font-weight: 500;
+        }
+
+        /* =========================================
+           4. Message Board (iMessage 风格)
+           ========================================= */
+        .message-section {
+            padding: 100px 0;
+            background: #000;
+            border-top: 1px solid var(--divider);
+        }
+
+        .ios-input-group {
+            position: relative;
+            width: 100%; max-width: 600px; margin: 40px auto;
+        }
+        
+        /* 苹果风输入框 */
+        .ios-input {
+            width: 100%;
+            background: #1c1c1e;
+            border: 1px solid #333;
+            padding: 18px 20px;
+            padding-right: 50px;
             border-radius: 12px;
             color: white;
-            font-size: 1rem;
+            font-size: 17px;
+            outline: none;
             transition: 0.3s;
         }
-        .glass-input:focus { border-color: var(--accent-blue); background: rgba(0,0,0,0.5); }
-        
-        .btn-send {
-            padding: 0 25px;
-            background: var(--text-primary);
-            color: #000;
+        .ios-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(41, 151, 255, 0.15); }
+
+        .ios-send-btn {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            width: 30px; height: 30px;
+            background: var(--accent-blue);
+            border-radius: 50%;
             border: none;
-            border-radius: 12px;
-            font-weight: bold;
+            color: white;
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
-            transition: 0.3s;
-        }
-        .btn-send:hover { transform: scale(1.05); background: var(--accent-blue); }
-
-        .msg-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-        .msg-list::-webkit-scrollbar { width: 4px; }
-        .msg-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-
-        .msg-card {
-            background: rgba(255,255,255,0.03);
-            padding: 15px;
-            border-radius: 12px;
-            border-left: 2px solid var(--accent-red); /* 红移风格 */
-            animation: slideIn 0.3s ease;
-        }
-        .msg-time { font-size: 0.75rem; color: #555; margin-bottom: 5px; display: block; }
-        .msg-text { font-size: 1rem; color: #eee; word-break: break-all; }
-
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-
-        /* =========================================
-           5. 联系方式列表
-           ========================================= */
-        .link-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            text-decoration: none; color: #fff;
             transition: 0.2s;
         }
-        .link-item:hover { background: rgba(255,255,255,0.05); padding-left: 25px; }
-        .link-item:last-child { border: none; }
+        .ios-send-btn:hover { background: #0077ED; }
 
-        /* Loading */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        .message-list {
+            max-width: 600px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 20px;
         }
-        .loader-bar { width: 150px; height: 1px; background: #333; position: relative; margin-top: 15px; }
-        .loader-fill { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: #fff; box-shadow: 0 0 10px #fff; }
+        
+        .msg-bubble {
+            background: #1c1c1e;
+            padding: 16px 20px;
+            border-radius: 20px;
+            border-bottom-left-radius: 4px; /* 气泡角 */
+            color: #f5f5f7;
+            font-size: 16px;
+            line-height: 1.5;
+            align-self: flex-start;
+            max-width: 80%;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .msg-date {
+            font-size: 12px; color: #555; margin-top: 5px; display: block;
+        }
+
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+        /* =========================================
+           5. Footer
+           ========================================= */
+        footer {
+            padding: 50px 0;
+            border-top: 1px solid var(--divider);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            h1 { font-size: 3.5rem; }
+            .bento-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+            .tile-large { grid-column: span 1; }
+            .tile { min-height: 300px; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div style="font-family: monospace; letter-spacing: 3px; font-size: 12px; color: #666;">系统启动中...</div>
-        <div class="loader-bar"><div class="loader-fill" id="loader-progress"></div></div>
-    </div>
+    <nav>
+        <div class="nav-content">
+            <div class="nav-logo">Tom Shi</div>
+            <div class="nav-links">
+                <a href="#about" class="nav-item">关于</a>
+                <a href="#board" class="nav-item">留言</a>
+                <a href="mailto:tom11s@outlook.com" class="nav-item">联系</a>
+            </div>
+        </div>
+    </nav>
 
-    <div id="canvas-world"></div>
+    <section class="hero">
+        <h1 class="gsap-hero">Tom Shi.</h1>
+        <h1 class="gsap-hero" style="background: linear-gradient(180deg, #86868b 0%, #3e3e42 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Developer. Thinker.</h1>
+        <p class="hero-desc gsap-hero">
+            探索物理法则与数字逻辑的边界。<br>
+            以极简代码，构建复杂世界。
+        </p>
+        <a href="#about" class="cta-link gsap-hero">进一步了解 ></a>
+    </section>
 
-    <div class="dock-container" id="dock">
-        <div class="dock-item active" onclick="Router.nav('home')" title="主页"><i class="bi bi-house-door-fill"></i></div>
-        <div class="dock-item" onclick="Router.nav('message')" title="通讯终端"><i class="bi bi-chat-square-text-fill"></i></div>
-        <div class="dock-item" onclick="Router.nav('connect')" title="建立连接"><i class="bi bi-person-lines-fill"></i></div>
-    </div>
-
-    <div id="app-container">
-
-        <section id="page-home" class="page-section active">
-            <div class="glass-panel" style="padding-top: 60px; padding-bottom: 60px;">
-                <div class="subtitle">身份识别</div>
-                <h1>TOM SHI</h1>
-                <p style="font-size: 1.2rem; color: #fff; margin-top: 10px;">星际穿越 · 物理学 · 代码构建</p>
+    <section id="about" class="grid-section">
+        <div class="container">
+            <div class="bento-grid">
                 
-                <div style="margin-top: 40px; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 16px; display: inline-block;">
-                    <div style="font-family: monospace; font-size: 2.5rem; font-weight: bold; color: var(--accent-blue); text-shadow: 0 0 20px rgba(0,242,255,0.4);" id="visit-count">----</div>
-                    <div style="font-size: 0.7rem; letter-spacing: 2px; color: #666; margin-top: 5px; text-transform: uppercase;">当前观测人数</div>
+                <div class="tile tile-large scroll-fade">
+                    <div class="tile-subtitle">简介</div>
+                    <div class="tile-title">不仅仅是代码。</div>
+                    <div class="tile-text">
+                        我是一名热衷于物理学和 Web 开发的独立创造者。我相信最好的技术应当像魔法一样，不仅运行精确，而且优雅、无感。
+                    </div>
+                    <div class="pill-group">
+                        <span class="pill">Physics</span>
+                        <span class="pill">Web Development</span>
+                        <span class="pill">Mathematics</span>
+                    </div>
                 </div>
+
+                <div class="tile scroll-fade" style="background: #000; border: 1px solid #333;">
+                    <div>
+                        <div class="tile-subtitle" style="color: var(--accent-blue);">实时观测</div>
+                        <div class="tile-title">访客数据</div>
+                    </div>
+                    <div class="counter-display" id="visit-count">----</div>
+                </div>
+
+                <div class="tile scroll-fade">
+                    <div class="tile-subtitle">连接</div>
+                    <div class="tile-title">保持联络。</div>
+                    <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 15px;">
+                        <a href="https://tomshi.online" target="_blank" style="text-decoration: none; color: white; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 10px;">个人主页 ↗</a>
+                        <a href="mailto:tom11s@outlook.com" style="text-decoration: none; color: white; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 10px;">发送邮件 ↗</a>
+                        <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" style="text-decoration: none; color: white; font-size: 18px;">Instagram ↗</a>
+                    </div>
+                </div>
+
+                <div class="tile tile-large scroll-fade" style="background: linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 100%);">
+                    <div class="tile-subtitle">理念</div>
+                    <div class="tile-title">Think Different.</div>
+                    <div class="tile-text">
+                        "The people who are crazy enough to think they can change the world are the ones who do."
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="board" class="message-section">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 60px;" class="scroll-fade">
+                <h2 style="font-size: 48px; font-weight: 600;">留言板.</h2>
+                <p style="color: var(--text-secondary); margin-top: 10px;">你的声音，云端永存。</p>
             </div>
 
-            <div class="glass-panel">
-                <h2>当前状态</h2>
-                <p>正在探索广义相对论与数字世界的交汇点。致力于构建沉浸式的 Web 体验。</p>
-                <div class="tag-row">
-                    <span class="tag"># 红移/蓝移</span>
-                    <span class="tag"># Three.js</span>
-                    <span class="tag"># 独立开发</span>
-                    <span class="tag"># 物理引擎</span>
-                </div>
+            <div class="ios-input-group scroll-fade">
+                <input type="text" id="msg-input" class="ios-input" placeholder="输入消息..." onkeypress="if(event.keyCode==13) sendMsg()">
+                <button class="ios-send-btn" onclick="sendMsg()">↑</button>
             </div>
-        </section>
 
-        <section id="page-message" class="page-section">
-            <div class="glass-panel">
-                <div class="subtitle">公共频道</div>
-                <h2>星际通讯终端</h2>
-                <p>在此留下你的信号，它将永久保存在云端数据库中。</p>
-
-                <div class="input-group" style="margin-top: 30px;">
-                    <input type="text" id="msg-input" class="glass-input" placeholder="输入消息 (回车发送)..." onkeypress="if(event.keyCode==13) MsgBoard.send()">
-                    <button class="btn-send" onclick="MsgBoard.send()"><i class="bi bi-send-fill"></i></button>
-                </div>
-
-                <div id="msg-container" class="msg-list">
-                    <div style="text-align:center; color:#555; padding: 20px;">正在搜索频道信号...</div>
-                </div>
+            <div id="msg-list" class="message-list">
+                <div style="text-align: center; color: #333;">Loading...</div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section id="page-connect" class="page-section">
-            <div class="glass-panel">
-                <div class="subtitle">建立连接</div>
-                <h2>联系方式</h2>
-                
-                <div style="margin-top: 30px;">
-                    <a href="https://tomshi.online" target="_blank" class="link-item">
-                        <div>
-                            <div style="font-size: 1.1rem; font-weight: bold;">个人网站</div>
-                            <div style="font-size: 0.9rem; color: #888;">tomshi.online</div>
-                        </div>
-                        <i class="bi bi-box-arrow-up-right"></i>
-                    </a>
-
-                    <a href="mailto:tom11s@outlook.com" class="link-item">
-                        <div>
-                            <div style="font-size: 1.1rem; font-weight: bold;">电子邮箱</div>
-                            <div style="font-size: 0.9rem; color: #888;">tom11s@outlook.com</div>
-                        </div>
-                        <i class="bi bi-envelope"></i>
-                    </a>
-
-                    <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="link-item">
-                        <div>
-                            <div style="font-size: 1.1rem; font-weight: bold;">Instagram</div>
-                            <div style="font-size: 0.9rem; color: #888;">@tom.11s</div>
-                        </div>
-                        <i class="bi bi-instagram"></i>
-                    </a>
-                </div>
-            </div>
-        </section>
-
-    </div>
+    <footer>
+        <div class="container">
+            Copyright © 2024 Tom Shi. All rights reserved. <br>
+            Designed in Apple Style.
+        </div>
+    </footer>
 
     <script>
-        // 🔴🔴🔴 必填：SUPABASE 配置
+        // 🔴🔴🔴 填入 Supabase Key (保留单引号)
         const CONFIG = {
-            supabaseUrl: '你的URL',
-            supabaseKey: '你的ANON_KEY',
-            starCount: 3500
+            url: '你的URL',
+            key: '你的ANON_KEY'
         };
 
-        // --- 1. 星际引擎 (Interstellar Engine) ---
-        class Universe {
-            constructor() {
-                this.scene = new THREE.Scene();
-                this.scene.fog = new THREE.FogExp2(0x050505, 0.0015); // 深空迷雾
+        const sb = supabase.createClient(CONFIG.url, CONFIG.key);
 
-                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-                this.camera.position.z = 1000;
+        // 1. 动效引擎 (GSAP Animation)
+        window.onload = () => {
+            gsap.registerPlugin(ScrollTrigger);
 
-                this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(window.devicePixelRatio);
-                document.getElementById('canvas-world').appendChild(this.renderer.domElement);
+            // Hero 进场动画
+            gsap.to(".gsap-hero", {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                stagger: 0.2, // 逐个出现
+                ease: "power3.out"
+            });
 
-                this.stars = null;
-                this.speed = 2; 
-
-                this.initStars();
-                this.animate();
-
-                window.addEventListener('resize', () => {
-                    this.camera.aspect = window.innerWidth / window.innerHeight;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+            // 滚动渐入动画
+            gsap.utils.toArray('.scroll-fade').forEach(el => {
+                gsap.from(el, {
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 85%", // 当元素顶部到达视口 85% 处触发
+                        toggleActions: "play none none reverse"
+                    },
+                    opacity: 0,
+                    y: 50,
+                    duration: 0.8,
+                    ease: "power3.out"
                 });
-            }
+            });
 
-            initStars() {
-                const geometry = new THREE.BufferGeometry();
-                const vertices = [];
-                const colors = [];
-                
-                // 颜色定义：蓝移(靠近) vs 红移(远离)
-                const cBlue = new THREE.Color(0x00f2ff);
-                const cRed = new THREE.Color(0xff0055);
-
-                for (let i = 0; i < CONFIG.starCount; i++) {
-                    const x = (Math.random() - 0.5) * 2000;
-                    const y = (Math.random() - 0.5) * 2000;
-                    const z = Math.random() * 2000;
-                    vertices.push(x, y, z);
-
-                    // 越靠近中心越蓝，越远越红
-                    const mix = Math.abs(x) / 1200; 
-                    const col = cBlue.clone().lerp(cRed, mix);
-                    colors.push(col.r, col.g, col.b);
-                }
-
-                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-                const material = new THREE.PointsMaterial({
-                    size: 2.5,
-                    vertexColors: true,
-                    transparent: true,
-                    opacity: 0.8
-                });
-
-                this.stars = new THREE.Points(geometry, material);
-                this.scene.add(this.stars);
-            }
-
-            animate() {
-                requestAnimationFrame(this.animate.bind(this));
-                const pos = this.stars.geometry.attributes.position.array;
-
-                for (let i = 2; i < pos.length; i += 3) {
-                    pos[i] += this.speed; 
-                    if (pos[i] > 1000) pos[i] = 0; // 循环飞行
-                }
-                this.stars.geometry.attributes.position.needsUpdate = true;
-                this.stars.rotation.z += 0.0005; // 缓慢自旋
-                this.renderer.render(this.scene, this.camera);
-            }
-
-            // 曲速穿梭特效
-            warp() {
-                gsap.to(this, { speed: 40, duration: 0.6, ease: "expo.in", onComplete: () => {
-                    gsap.to(this, { speed: 2, duration: 2, ease: "power2.out" });
-                }});
-            }
-        }
-
-        // --- 2. 路由系统 (Router) ---
-        const Router = {
-            current: 'home',
-            engine: null,
-            init(eng) { this.engine = eng; },
-            
-            nav(target) {
-                if (target === this.current) return;
-                
-                // UI 状态
-                document.querySelectorAll('.dock-item').forEach(el => el.classList.remove('active'));
-                event.currentTarget.classList.add('active');
-
-                // 触发特效
-                this.engine.warp();
-
-                // 页面切换
-                const currEl = document.getElementById(`page-${this.current}`);
-                const nextEl = document.getElementById(`page-${target}`);
-
-                gsap.to(currEl, { opacity: 0, scale: 0.95, duration: 0.3, onComplete: () => {
-                    currEl.classList.remove('active');
-                    nextEl.classList.add('active');
-                    gsap.fromTo(nextEl, { opacity: 0, scale: 1.05 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out" });
-                    
-                    // 如果进入留言板，加载消息
-                    if(target === 'message') MsgBoard.load();
-                }});
-
-                this.current = target;
-            }
+            initData();
+            loadMessages();
         };
 
-        // --- 3. 留言板逻辑 (Message Board) ---
-        const MsgBoard = {
-            sb: null,
-            init(client) { this.sb = client; },
-
-            async load() {
-                const container = document.getElementById('msg-container');
-                const { data, error } = await this.sb
-                    .from('messages')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-
-                if(error) {
-                    container.innerHTML = '<div style="text-align:center; color:red">信号连接失败</div>';
-                    return;
-                }
-                
-                container.innerHTML = data.map(msg => `
-                    <div class="msg-card">
-                        <span class="msg-time">${new Date(msg.created_at).toLocaleString('zh-CN')}</span>
-                        <div class="msg-text">${this.escape(msg.content)}</div>
-                    </div>
-                `).join('');
-            },
-
-            async send() {
-                const input = document.getElementById('msg-input');
-                const text = input.value.trim();
-                if(!text) return;
-
-                input.value = '发送中...';
-                const { error } = await this.sb.from('messages').insert({ content: text });
-                
-                if(error) alert('发送失败');
-                else {
-                    input.value = '';
-                    this.load(); // 刷新列表
-                }
-            },
-
-            escape(str) {
-                return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            }
-        };
-
-        // --- 4. 计数器逻辑 ---
-        async function initStats(sb) {
+        // 2. 计数器逻辑
+        async function initData() {
             try {
                 await sb.rpc('increment_visits', { page_id: 'home_page' });
                 const { data } = await sb.from('site_stats').select('visits').eq('id', 'home_page').single();
-                if(data) {
-                    let o = { v: 0 };
-                    gsap.to(o, { v: data.visits, duration: 2, ease: "power3.out", onUpdate: () => {
-                        document.getElementById('visit-count').innerText = Math.floor(o.v).toString().padStart(4, '0');
-                    }});
+                
+                if (data) {
+                    const el = document.getElementById('visit-count');
+                    let obj = { val: 0 };
+                    // 数字滚动动画
+                    gsap.to(obj, {
+                        val: data.visits,
+                        duration: 2,
+                        ease: "power4.out",
+                        onUpdate: () => el.innerText = Math.floor(obj.val).toLocaleString() // 加千分位逗号
+                    });
                 }
             } catch(e) {}
         }
 
-        // --- 启动流程 ---
-        window.onload = () => {
-            const bar = document.getElementById('loader-progress');
-            const loader = document.getElementById('loader');
+        // 3. 留言板逻辑
+        async function loadMessages() {
+            const list = document.getElementById('msg-list');
+            const { data, error } = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(10);
             
-            // 进度条动画
-            gsap.to(bar, { width: "100%", duration: 1.5, ease: "power2.inOut", onComplete: () => {
-                // 隐藏 Loader
-                gsap.to(loader, { y: "-100%", duration: 0.8, ease: "power4.inOut" });
-                document.getElementById('canvas-world').style.opacity = 1;
-                
-                // 启动引擎
-                const universe = new Universe();
-                Router.init(universe);
-                
-                // 启动 UI
-                gsap.to('#app-container', { opacity: 1, duration: 1, delay: 0.5 });
-                gsap.to('#dock', { y: 0, duration: 1, delay: 0.8 });
+            if (error) {
+                list.innerHTML = '<div style="text-align:center; color:#333;">无法连接服务器</div>';
+                return;
+            }
 
-                // 连接 Supabase
-                try {
-                    const sb = supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
-                    MsgBoard.init(sb);
-                    initStats(sb);
-                } catch(e) { console.log("Supabase key missing"); }
-            }});
-        };
+            list.innerHTML = data.map(msg => `
+                <div class="msg-bubble">
+                    ${msg.content.replace(/</g, "&lt;")}
+                    <span class="msg-date">${new Date(msg.created_at).toLocaleDateString()}</span>
+                </div>
+            `).join('');
+        }
+
+        async function sendMsg() {
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            const { error } = await sb.from('messages').insert({ content: text });
+            if (!error) {
+                input.value = '';
+                loadMessages();
+            } else {
+                alert('发送失败');
+            }
+        }
     </script>
 </body>
 </html>
