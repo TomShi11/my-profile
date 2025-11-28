@@ -1,463 +1,423 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tom Shi | The Event Horizon</title>
-    <meta name="description" content="Physics enthusiast & Web Developer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tom Shi | Stardust OS</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
         /* =========================================
-           1. CORE SYSTEM & TYPOGRAPHY
+           1. CORE DESIGN SYSTEM (核心设计系统)
            ========================================= */
         :root {
-            --bg-deep: #030005;
-            --glass-surface: rgba(255, 255, 255, 0.03);
+            --bg-color: #000000;
+            --glass-base: rgba(20, 20, 20, 0.4);
             --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-highlight: rgba(255, 255, 255, 0.15);
-            --primary-accent: #6e56cf; /* 宇宙紫 */
-            --secondary-accent: #3fb5ff; /* 极光蓝 */
-            --text-main: #ffffff;
-            --text-muted: #888888;
-            --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            --font-mono: 'SF Mono', 'Fira Code', 'Courier New', monospace;
-            --cursor-size: 20px;
+            --glass-shine: rgba(255, 255, 255, 0.15);
+            --text-primary: #ffffff;
+            --text-secondary: #86868b;
+            --accent: #0a84ff;
+            --nav-height: 70px;
+            --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; /* 隐藏默认鼠标 */ }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            background-color: var(--bg-deep);
-            color: var(--text-main);
-            font-family: var(--font-display);
-            overflow-x: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-stack);
+            overflow: hidden; /* 禁止滚动，全屏应用体验 */
             height: 100vh;
             width: 100vw;
-            user-select: none;
-            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 3D 画布层 */
+        #canvas-world {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none; /* 让鼠标穿透到 UI 层 */
+        }
+
+        /* UI 容器层 */
+        #app-container {
+            position: relative;
+            z-index: 10;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            padding-bottom: calc(var(--nav-height) + 40px);
+            overflow-y: auto; /* 内容溢出滚动 */
+            scroll-behavior: smooth;
+        }
+
+        /* 隐藏滚动条 */
+        #app-container::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* =========================================
+           2. NAVIGATION DOCK (底部导航栏)
+           ========================================= */
+        .dock-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 8px;
+            display: flex;
+            gap: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .dock-item {
+            position: relative;
+            width: 50px; height: 50px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dock-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateY(-5px);
+        }
+
+        .dock-item.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 15px rgba(255,255,255,0.1);
+        }
+
+        .dock-tooltip {
+            position: absolute;
+            top: -40px;
+            background: rgba(0,0,0,0.8);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            opacity: 0;
+            transition: 0.2s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .dock-item:hover .dock-tooltip { opacity: 1; top: -50px; }
+
+        /* =========================================
+           3. PAGE TRANSITIONS & STRUCTURE
+           ========================================= */
+        .page-section {
+            display: none; /* 默认隐藏所有页面 */
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        /* 苹果风毛玻璃卡片 */
+        .glass-panel {
+            background: var(--glass-base);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 24px;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        .glass-panel:hover {
+            border-color: var(--glass-shine);
+            transform: translateY(-2px);
+        }
+
+        h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
+        h1 { font-size: 3rem; margin-bottom: 10px; background: linear-gradient(to bottom, #fff, #999); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p { line-height: 1.6; color: var(--text-secondary); font-size: 1.05rem; }
+
+        /* =========================================
+           4. PAGE: HOME (Dashboard)
+           ========================================= */
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .profile-avatar {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #333, #666);
+            border: 2px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 15px;
         }
 
         /* =========================================
-           2. LOADING SCREEN (开场动画)
+           5. PAGE: UNIVERSE (Physics Lab)
            ========================================= */
+        #physics-canvas-container {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            cursor: crosshair;
+        }
+        .lab-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-lab {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-lab:hover { background: rgba(255,255,255,0.2); }
+
+        /* =========================================
+           6. PAGE: CONTACT (Connect)
+           ========================================= */
+        .contact-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .contact-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            text-decoration: none;
+            color: white;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+        .contact-item:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.1);
+            transform: scale(1.01);
+        }
+
+        /* 加载遮罩 */
         #loader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: #000;
             z-index: 9999;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
         }
-        .loader-text {
-            font-family: var(--font-mono);
-            font-size: 12px;
-            letter-spacing: 4px;
-            color: var(--text-muted);
-            margin-bottom: 20px;
-        }
-        .loader-bar-bg {
-            width: 200px; height: 2px;
-            background: #222;
-            position: relative;
-            overflow: hidden;
-        }
-        .loader-bar-fill {
-            position: absolute;
-            left: 0; top: 0; height: 100%; width: 0%;
-            background: #fff;
-            transition: width 0.1s ease;
-        }
-
-        /* =========================================
-           3. CANVAS BACKGROUND (3D 场景层)
-           ========================================= */
-        #canvas-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-            opacity: 0; /* 加载完成后显示 */
-            transition: opacity 2s ease;
-        }
-
-        /* =========================================
-           4. CUSTOM CURSOR (磁吸光标)
-           ========================================= */
-        #cursor {
-            position: fixed;
-            top: 0; left: 0;
-            width: var(--cursor-size); height: var(--cursor-size);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+        .loader-spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #fff;
             border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            transition: width 0.3s, height 0.3s, background-color 0.3s, border-color 0.3s;
-            mix-blend-mode: difference;
+            animation: spin 1s linear infinite;
         }
-        #cursor-dot {
-            position: fixed;
-            top: 0; left: 0;
-            width: 4px; height: 4px;
-            background: white;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-        }
-        body:hover #cursor.hovered {
-            width: 50px; height: 50px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: transparent;
-            backdrop-filter: blur(2px);
-        }
-
-        /* =========================================
-           5. MAIN INTERFACE (Bento Grid 布局)
-           ========================================= */
-        #ui-layer {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            opacity: 0; /* 入场前隐藏 */
-        }
-
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(10, 60px); /* 精细化行高 */
-            gap: 24px;
-            width: 100%;
-            max-width: 1000px;
-            perspective: 1000px; /* 3D 透视 */
-        }
-
-        /* 卡片基础物理属性 */
-        .glass-card {
-            background: var(--glass-surface);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-            padding: 32px;
-            position: relative;
-            overflow: hidden;
-            transition: border-color 0.3s;
-            transform-style: preserve-3d; /* 开启3D子元素 */
-        }
-        .glass-card:hover {
-            border-color: var(--glass-highlight);
-        }
-        /* 卡片内部光效 */
-        .glass-card::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.06), transparent 40%);
-            opacity: 0;
-            transition: opacity 0.5s;
-            pointer-events: none;
-            z-index: 2;
-        }
-        .glass-card:hover::after { opacity: 1; }
-
-        /* --- 具体的卡片布局 --- */
-
-        /* A. 个人信息 (左上大块) */
-        .area-profile {
-            grid-column: span 2;
-            grid-row: span 5;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .profile-header h1 {
-            font-size: 3.5rem;
-            font-weight: 700;
-            line-height: 1;
-            letter-spacing: -2px;
-            background: linear-gradient(120deg, #fff, #888);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 16px;
-        }
-        .role-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 12px;
-            border-radius: 100px;
-            background: rgba(110, 86, 207, 0.2);
-            border: 1px solid rgba(110, 86, 207, 0.4);
-            color: #bfaaff;
-            font-size: 0.8rem;
-            font-weight: 600;
-            font-family: var(--font-mono);
-            margin-bottom: 24px;
-        }
-        .bio-text {
-            color: var(--text-muted);
-            line-height: 1.6;
-            font-size: 1.1rem;
-        }
-
-        /* B. 计数器仪表盘 (右上) */
-        .area-stats {
-            grid-column: span 2;
-            grid-row: span 3;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.2));
-        }
-        .stat-group { display: flex; flex-direction: column; }
-        .stat-label { 
-            font-family: var(--font-mono); 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-            font-size: 0.75rem; 
-            color: #555; 
-            margin-bottom: 5px;
-        }
-        .stat-value {
-            font-family: var(--font-mono);
-            font-size: 3.5rem;
-            font-weight: 400;
-            color: var(--secondary-accent);
-            text-shadow: 0 0 30px rgba(63, 181, 255, 0.4);
-        }
-        .live-dot {
-            width: 8px; height: 8px;
-            background: #00ff88;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #00ff88;
-            animation: pulse 2s infinite;
-        }
-
-        /* C. 技能栈 (左下) */
-        .area-stack {
-            grid-column: span 1;
-            grid-row: span 5;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .stack-item {
-            padding: 12px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 12px;
-            text-align: center;
-            font-size: 0.9rem;
-            font-weight: 500;
-            border: 1px solid transparent;
-            transition: 0.3s;
-        }
-        .stack-item:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: var(--primary-accent);
-            transform: translateX(5px);
-        }
-
-        /* D. 社交链接 (中下) */
-        .area-social {
-            grid-column: span 2;
-            grid-row: span 2;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .social-btn {
-            text-decoration: none;
-            color: #fff;
-            font-size: 1.2rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            opacity: 0.8;
-            transition: 0.3s;
-        }
-        .social-btn:hover { opacity: 1; transform: scale(1.05); }
-
-        /* E. 邮箱 (右下) */
-        .area-email {
-            grid-column: span 1;
-            grid-row: span 5;
-            background: var(--primary-accent);
-            color: #fff;
-            display: flex;
-            align-items: flex-end;
-        }
-        .email-link {
-            text-decoration: none;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            line-height: 1.2;
-        }
-
-        /* 动画关键帧 */
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-
-        /* 移动端适配 */
-        @media (max-width: 900px) {
-            .grid-container {
-                display: flex;
-                flex-direction: column;
-                height: auto;
-            }
-            .glass-card { min-height: 180px; }
-            .area-profile { min-height: 300px; }
-            #cursor, #cursor-dot { display: none; } /* 移动端隐藏自定义光标 */
-        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="loader-text">INITIALIZING PHYSICS ENGINE...</div>
-        <div class="loader-bar-bg"><div class="loader-bar-fill" id="loader-progress"></div></div>
+        <div class="loader-spinner"></div>
+        <p style="margin-top:20px; font-size:12px; letter-spacing:2px; color:#666">INITIALIZING STARDUST...</p>
     </div>
 
-    <div id="cursor"></div>
-    <div id="cursor-dot"></div>
+    <div id="canvas-world"></div>
 
-    <div id="canvas-container"></div>
-
-    <div id="ui-layer">
-        <div class="grid-container">
-            
-            <div class="glass-card area-profile" data-tilt>
-                <div class="profile-header">
-                    <div class="role-badge">WEB DEVELOPER & PHYSICS GEEK</div>
-                    <h1>Tom Shi</h1>
-                </div>
-                <div class="bio-text">
-                    <p>Building digital experiences at the intersection of logic and creativity. Obsessed with the cosmos, quantum mechanics, and clean code.</p>
-                </div>
-            </div>
-
-            <div class="glass-card area-stats" data-tilt>
-                <div class="stat-group">
-                    <div class="stat-label"><div class="live-dot" style="display:inline-block; margin-right:5px"></div> Live Observers</div>
-                    <div class="stat-value" id="visit-count">0000</div>
-                </div>
-            </div>
-
-            <div class="glass-card area-stack" data-tilt>
-                <div class="stat-label" style="text-align:center; width:100%">Tech Stack</div>
-                <div class="stack-item">⚛️ React / Next.js</div>
-                <div class="stack-item">📐 Three.js / WebGL</div>
-                <div class="stack-item">⚡ Supabase</div>
-                <div class="stack-item">🐍 Python</div>
-            </div>
-
-            <div class="glass-card area-social" data-tilt>
-                <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="social-btn interactable">
-                    <span>Instagram</span>
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 17l9.2-9.2M17 17V7H7"></path></svg>
-                </a>
-                <a href="#" class="social-btn interactable">
-                    <span>GitHub</span>
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 17l9.2-9.2M17 17V7H7"></path></svg>
-                </a>
-            </div>
-
-            <div class="glass-card area-email interactable" data-tilt>
-                <a href="mailto:tom11s@outlook.com" class="email-link">
-                    Let's<br>Work<br>Together.
-                </a>
-            </div>
-
+    <div class="dock-container">
+        <div class="dock-item active" onclick="Router.nav('home')">
+            <i class="bi bi-grid-fill"></i>
+            <div class="dock-tooltip">Dashboard</div>
+        </div>
+        <div class="dock-item" onclick="Router.nav('universe')">
+            <i class="bi bi-stars"></i>
+            <div class="dock-tooltip">Physics Lab</div>
+        </div>
+        <div class="dock-item" onclick="Router.nav('contact')">
+            <i class="bi bi-person-badge-fill"></i>
+            <div class="dock-tooltip">Contact</div>
         </div>
     </div>
 
+    <div id="app-container">
+
+        <section id="page-home" class="page-section active">
+            <div class="glass-panel profile-header">
+                <div class="profile-avatar">TS</div> <div>
+                    <h1>Tom Shi</h1>
+                    <p>Physics Geek & Web Developer.<br>Exploring the digital cosmos.</p>
+                </div>
+            </div>
+
+            <div class="hero-grid">
+                <div class="glass-panel">
+                    <div class="stat-badge"><i class="bi bi-eye"></i> LIVE</div>
+                    <h3 style="color:#aaa; font-size:0.9rem; text-transform:uppercase; margin-bottom:5px;">Total Observers</h3>
+                    <h2 id="visit-count" style="font-size:2.5rem; font-family:monospace;">----</h2>
+                </div>
+
+                <div class="glass-panel">
+                    <div class="stat-badge" style="background:rgba(10, 132, 255, 0.1); color:#0a84ff"><i class="bi bi-code-slash"></i> STACK</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                        <span style="padding:5px 10px; background:rgba(255,255,255,0.1); border-radius:50px; font-size:0.8rem;">Physics</span>
+                        <span style="padding:5px 10px; background:rgba(255,255,255,0.1); border-radius:50px; font-size:0.8rem;">JavaScript</span>
+                        <span style="padding:5px 10px; background:rgba(255,255,255,0.1); border-radius:50px; font-size:0.8rem;">Three.js</span>
+                        <span style="padding:5px 10px; background:rgba(255,255,255,0.1); border-radius:50px; font-size:0.8rem;">Supabase</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <h3><i class="bi bi-journal-text"></i> Latest Thoughts</h3>
+                <p style="margin-top:10px;">Currently researching fluid dynamics simulations in WebGL. Building the gap between theoretical physics and visual arts.</p>
+                <button onclick="alert('Blog module coming soon!')" style="margin-top:15px; padding:8px 20px; background:rgba(255,255,255,0.1); border:none; color:white; border-radius:8px; cursor:pointer;">Read More</button>
+            </div>
+        </section>
+
+        <section id="page-universe" class="page-section">
+            <div class="glass-panel">
+                <h2>Interactive Gravity Lab</h2>
+                <p style="margin-bottom:20px;">A real-time particle system simulating gravitational forces. Click to create repulsion.</p>
+                
+                <div id="physics-canvas-container">
+                    <canvas id="physics-canvas"></canvas>
+                </div>
+                
+                <div class="lab-controls">
+                    <button class="btn-lab" onclick="PhysicsLab.reset()">Reset Particles</button>
+                    <button class="btn-lab" onclick="PhysicsLab.toggleGravity()">Toggle Gravity</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-contact" class="page-section">
+            <div class="glass-panel">
+                <h2>Connect</h2>
+                <p style="margin-bottom:20px;">Let's build something impossible together.</p>
+                
+                <div class="contact-list">
+                    <a href="mailto:tom11s@outlook.com" class="contact-item">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <i class="bi bi-envelope-at" style="font-size:1.5rem;"></i>
+                            <div>
+                                <div style="font-weight:600;">Email</div>
+                                <div style="font-size:0.9rem; color:#888;">tom11s@outlook.com</div>
+                            </div>
+                        </div>
+                        <i class="bi bi-arrow-right-short" style="font-size:1.5rem; opacity:0.5;"></i>
+                    </a>
+
+                    <a href="https://www.instagram.com/tom.11s?igsh=MW5sb2VuajlkMzY3Nw==" target="_blank" class="contact-item">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <i class="bi bi-instagram" style="font-size:1.5rem; color:#E1306C;"></i>
+                            <div>
+                                <div style="font-weight:600;">Instagram</div>
+                                <div style="font-size:0.9rem; color:#888;">@tom.11s</div>
+                            </div>
+                        </div>
+                        <i class="bi bi-arrow-right-short" style="font-size:1.5rem; opacity:0.5;"></i>
+                    </a>
+
+                    <div class="contact-item" onclick="alert('Website under construction. Coming soon!')" style="cursor:pointer; opacity:0.5;">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <i class="bi bi-globe" style="font-size:1.5rem;"></i>
+                            <div>
+                                <div style="font-weight:600;">Personal Website</div>
+                                <div style="font-size:0.9rem; color:#888;">Coming Soon</div>
+                            </div>
+                        </div>
+                        <i class="bi bi-lock" style="font-size:1.5rem; opacity:0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
     <script>
-        // 🔴🔴🔴 配置区：填入你的 Supabase 密钥
+        // 🔴 配置中心
         const CONFIG = {
-            supabaseUrl: 'https://fznfneqwxzuwtognuoeo.supabase.co',
-            supabaseKey: 'sb_publishable_UlNMDLt4OaYIX-_lCezGwA_8jIQLhFO',
-            particleCount: 2000,
-            particleColor: 0x6e56cf
+            supabaseUrl: '你的URL',
+            supabaseKey: '你的ANON_KEY',
+            starsCount: 3000,
+            cameraSpeed: 0.05
         };
 
-        // ----------------------------------------------------
-        // MODULE 1: 3D ENGINE (Three.js 粒子黑洞系统)
-        // ----------------------------------------------------
-        class SpaceScene {
+        // --- MODULE 1: 3D STARFIELD ENGINE (繁星背景) ---
+        class StarEngine {
             constructor() {
-                this.container = document.getElementById('canvas-container');
                 this.scene = new THREE.Scene();
-                this.scene.fog = new THREE.FogExp2(0x030005, 0.002); // 迷雾效果
-                
-                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                this.camera.position.z = 30;
+                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.z = 1;
+                this.camera.rotation.x = Math.PI/2;
 
-                this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                this.renderer = new THREE.WebGLRenderer({ alpha: true });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(window.devicePixelRatio);
-                this.container.appendChild(this.renderer.domElement);
+                document.getElementById('canvas-world').appendChild(this.renderer.domElement);
 
-                this.particles = null;
-                this.mouseX = 0;
-                this.mouseY = 0;
-
-                this.initParticles();
-                this.addEventListeners();
+                this.stars = null;
+                this.speed = 0;
+                
+                this.initStars();
                 this.animate();
-            }
-
-            initParticles() {
-                const geometry = new THREE.BufferGeometry();
-                const vertices = [];
-                const colors = [];
-
-                for (let i = 0; i < CONFIG.particleCount; i++) {
-                    // 生成螺旋黑洞形状的粒子
-                    const r = Math.random() * 40 + 10; // 半径
-                    const theta = Math.random() * Math.PI * 2 * 3; // 角度
-                    const phi = (Math.random() - 0.5) * 10; // 高度弥散
-
-                    const x = r * Math.cos(theta);
-                    const y = phi; 
-                    const z = r * Math.sin(theta);
-
-                    vertices.push(x, y, z);
-                    colors.push(0.4, 0.3, 0.8); // 基础紫色
-                }
-
-                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-                const material = new THREE.PointsMaterial({
-                    size: 0.15,
-                    color: 0xffffff,
-                    vertexColors: true,
-                    transparent: true,
-                    opacity: 0.8,
-                    blending: THREE.AdditiveBlending
-                });
-
-                this.particles = new THREE.Points(geometry, material);
-                this.scene.add(this.particles);
-            }
-
-            addEventListeners() {
-                document.addEventListener('mousemove', (e) => {
-                    this.mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
-                    this.mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
-                });
+                
                 window.addEventListener('resize', () => {
                     this.camera.aspect = window.innerWidth / window.innerHeight;
                     this.camera.updateProjectionMatrix();
@@ -465,167 +425,223 @@
                 });
             }
 
+            initStars() {
+                const geo = new THREE.BufferGeometry();
+                const pos = [];
+                // 模拟繁星
+                for(let i=0; i<CONFIG.starsCount; i++) {
+                    pos.push(Math.random() * 600 - 300);
+                    pos.push(Math.random() * 600 - 300);
+                    pos.push(Math.random() * 600 - 300);
+                }
+                geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+                
+                const mat = new THREE.PointsMaterial({
+                    color: 0xaaaaaa,
+                    size: 0.7,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                this.stars = new THREE.Points(geo, mat);
+                this.scene.add(this.stars);
+            }
+
+            warp(speed) {
+                // 页面切换时的加速效果
+                gsap.to(this, { speed: speed, duration: 1, ease: "power2.inOut", onComplete: () => {
+                    gsap.to(this, { speed: 0, duration: 2, ease: "power2.out" });
+                }});
+            }
+
             animate() {
                 requestAnimationFrame(this.animate.bind(this));
-
-                if (this.particles) {
-                    // 粒子自转
-                    this.particles.rotation.y += 0.002;
-                    // 随鼠标视差移动
-                    this.particles.rotation.x += (this.mouseY - this.particles.rotation.x) * 0.05;
-                    this.particles.rotation.z += (this.mouseX - this.particles.rotation.z) * 0.05;
-                }
+                
+                // 恒星自转
+                this.stars.rotation.y += 0.0005 + this.speed;
+                this.stars.velocity += this.speed;
 
                 this.renderer.render(this.scene, this.camera);
             }
         }
 
-        // ----------------------------------------------------
-        // MODULE 2: INTERACTION ENGINE (光标与卡片物理效果)
-        // ----------------------------------------------------
-        class Interaction {
-            constructor() {
-                this.cursor = document.getElementById('cursor');
-                this.cursorDot = document.getElementById('cursor-dot');
-                this.cards = document.querySelectorAll('[data-tilt]');
-                
-                this.mouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
-                this.cursorPos = { x: window.innerWidth/2, y: window.innerHeight/2 };
-                
-                this.initCursor();
-                this.initTilt();
-            }
+        // --- MODULE 2: SPA ROUTER (页面路由系统) ---
+        const Router = {
+            current: 'home',
+            engine: null, // 引用 3D 引擎
 
-            initCursor() {
-                document.addEventListener('mousemove', (e) => {
-                    this.mouse.x = e.clientX;
-                    this.mouse.y = e.clientY;
-                    
-                    // 交互元素吸附检测
-                    if (e.target.closest('.interactable') || e.target.tagName === 'A') {
-                        this.cursor.classList.add('hovered');
-                    } else {
-                        this.cursor.classList.remove('hovered');
+            init(engineRef) {
+                this.engine = engineRef;
+                // 默认显示 Home
+                this.show('home');
+            },
+
+            nav(targetId) {
+                if (targetId === this.current) return;
+                
+                // 1. 更新底部导航栏 UI
+                document.querySelectorAll('.dock-item').forEach(el => el.classList.remove('active'));
+                event.currentTarget.classList.add('active');
+
+                // 2. 触发 3D 穿梭特效
+                if(this.engine) this.engine.warp(0.02);
+
+                // 3. 页面转场动画
+                const currentEl = document.getElementById(`page-${this.current}`);
+                const nextEl = document.getElementById(`page-${targetId}`);
+
+                // 退出动画
+                gsap.to(currentEl, {
+                    opacity: 0,
+                    scale: 0.95,
+                    duration: 0.4,
+                    onComplete: () => {
+                        currentEl.classList.remove('active');
+                        nextEl.classList.add('active');
+                        
+                        // 进入动画
+                        gsap.fromTo(nextEl, 
+                            { opacity: 0, scale: 1.05 },
+                            { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.2)" }
+                        );
+                        
+                        // 如果进入的是物理实验室，启动物理引擎
+                        if(targetId === 'universe') PhysicsLab.start();
                     }
                 });
 
-                // 光标平滑跟随循环
-                const loop = () => {
-                    // Lerp 算法实现延迟跟随
-                    this.cursorPos.x += (this.mouse.x - this.cursorPos.x) * 0.15;
-                    this.cursorPos.y += (this.mouse.y - this.cursorPos.y) * 0.15;
+                this.current = targetId;
+            },
 
-                    this.cursor.style.transform = `translate(${this.cursorPos.x}px, ${this.cursorPos.y}px) translate(-50%, -50%)`;
-                    this.cursorDot.style.transform = `translate(${this.mouse.x}px, ${this.mouse.y}px) translate(-50%, -50%)`;
-                    
-                    requestAnimationFrame(loop);
-                };
-                loop();
+            show(id) {
+                document.getElementById(`page-${id}`).classList.add('active');
+                gsap.fromTo(`#page-${id}`, {opacity:0, y:20}, {opacity:1, y:0, duration:0.8});
             }
+        };
 
-            initTilt() {
-                // 卡片 3D 倾斜逻辑
-                this.cards.forEach(card => {
-                    card.addEventListener('mousemove', (e) => {
-                        const rect = card.getBoundingClientRect();
-                        const x = e.clientX - rect.left;
-                        const y = e.clientY - rect.top;
-                        
-                        // 更新 CSS 变量用于光照效果
-                        card.style.setProperty('--mouse-x', `${x}px`);
-                        card.style.setProperty('--mouse-y', `${y}px`);
+        // --- MODULE 3: PHYSICS LAB (嵌入式物理引擎) ---
+        const PhysicsLab = {
+            canvas: null,
+            ctx: null,
+            particles: [],
+            animationId: null,
+            running: false,
+            
+            start() {
+                if (this.running) return;
+                this.canvas = document.getElementById('physics-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // 设置画布大小
+                const container = document.getElementById('physics-canvas-container');
+                this.canvas.width = container.offsetWidth;
+                this.canvas.height = container.offsetHeight;
 
-                        // 计算倾斜角度
-                        const centerX = rect.width / 2;
-                        const centerY = rect.height / 2;
-                        const rotateX = ((y - centerY) / centerY) * -5; // 最大倾斜 5度
-                        const rotateY = ((x - centerX) / centerX) * 5;
+                this.reset();
+                this.running = true;
+                this.loop();
 
-                        gsap.to(card, {
-                            transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`,
-                            duration: 0.2
-                        });
-                    });
-
-                    card.addEventListener('mouseleave', () => {
-                        gsap.to(card, {
-                            transform: `perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)`,
-                            duration: 0.5,
-                            ease: "elastic.out(1, 0.5)"
-                        });
-                    });
+                // 交互监听
+                this.canvas.addEventListener('mousemove', e => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.mouse.x = e.clientX - rect.left;
+                    this.mouse.y = e.clientY - rect.top;
                 });
-            }
-        }
+            },
 
-        // ----------------------------------------------------
-        // MODULE 3: DATA ENGINE (Supabase 后端连接)
-        // ----------------------------------------------------
-        async function initData() {
+            mouse: { x: -100, y: -100 },
+            
+            reset() {
+                this.particles = [];
+                for(let i=0; i<100; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        size: Math.random() * 3 + 1,
+                        color: `hsl(${Math.random()*60 + 200}, 70%, 50%)`
+                    });
+                }
+            },
+
+            toggleGravity() {
+                alert("Simulating Gravity Inversion... (Visual Only)");
+            },
+
+            loop() {
+                if (!this.running) return;
+                this.ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.particles.forEach(p => {
+                    // 简单的引力逻辑
+                    const dx = this.mouse.x - p.x;
+                    const dy = this.mouse.y - p.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist < 200) {
+                        p.vx += dx * 0.0005;
+                        p.vy += dy * 0.0005;
+                    }
+
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    // 边界反弹
+                    if(p.x < 0 || p.x > this.canvas.width) p.vx *= -1;
+                    if(p.y < 0 || p.y > this.canvas.height) p.vy *= -1;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.fill();
+                });
+
+                requestAnimationFrame(this.loop.bind(this));
+            }
+        };
+
+        // --- MODULE 4: BACKEND (Supabase 数据) ---
+        async function initBackend() {
             try {
-                const supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+                const supabaseClient = supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
                 const el = document.getElementById('visit-count');
 
-                // 原子操作 +1
-                await supabase.rpc('increment_visits', { page_id: 'home_page' });
-
-                // 获取数据
-                const { data } = await supabase
-                    .from('site_stats')
-                    .select('visits')
-                    .eq('id', 'home_page')
-                    .single();
-
+                // +1
+                await supabaseClient.rpc('increment_visits', { page_id: 'home_page' });
+                // 获取
+                const { data } = await supabaseClient.from('site_stats').select('visits').eq('id', 'home_page').single();
+                
                 if (data) {
-                    // 数字滚动动画
-                    gsap.to(el, {
-                        innerHTML: data.visits,
+                    // 数字动画
+                    let obj = { val: 0 };
+                    gsap.to(obj, {
+                        val: data.visits,
                         duration: 2,
-                        snap: { innerHTML: 1 }, // 保证是整数
                         ease: "power2.out",
-                        onUpdate: function() {
-                            el.innerHTML = Math.ceil(this.targets()[0].innerHTML).toString().padStart(4, '0');
-                        }
+                        onUpdate: () => { el.innerText = Math.floor(obj.val).toString().padStart(4,'0'); }
                     });
                 }
-            } catch (error) {
-                console.error("Data Error:", error);
-                document.getElementById('visit-count').innerText = "ERR";
+            } catch (e) {
+                console.log("Offline Mode");
             }
         }
 
-        // ----------------------------------------------------
-        // INITIALIZATION (启动程序)
-        // ----------------------------------------------------
-        window.addEventListener('load', () => {
-            // 1. 模拟加载进度条
-            const progress = document.getElementById('loader-progress');
-            const loader = document.getElementById('loader');
-            const ui = document.getElementById('ui-layer');
-            const canvas = document.getElementById('canvas-container');
-
-            // 进度条动画
-            gsap.to(progress, {
-                width: "100%",
-                duration: 1.5,
-                ease: "power2.inOut",
-                onComplete: () => {
-                    // 2. 隐藏加载页，显示主界面
-                    gsap.to(loader, { y: "-100%", duration: 0.8, ease: "power4.inOut" });
-                    
-                    // 3. 启动 3D 引擎
-                    new SpaceScene();
-                    
-                    // 4. 显示 UI 和 背景
-                    canvas.style.opacity = 1;
-                    gsap.to(ui, { opacity: 1, duration: 1, delay: 0.5 });
-                    
-                    // 5. 启动交互和数据
-                    new Interaction();
-                    initData();
-                }
-            });
-        });
+        // --- SYSTEM INIT (启动) ---
+        window.onload = () => {
+            // 0. 移除加载动画
+            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
+            
+            // 1. 启动 3D 引擎
+            const engine = new StarEngine();
+            
+            // 2. 启动路由
+            Router.init(engine);
+            
+            // 3. 连接后端
+            initBackend();
+        };
 
     </script>
 </body>
