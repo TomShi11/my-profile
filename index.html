@@ -431,16 +431,33 @@
                 }
             }
 
-            // 4. Fallback Construction (Timezone)
+            // 4. Fallback Construction (Timezone) + Geocoding
             if(!data || (!data.success && !data.ip)) {
-                const browserLoc = getBrowserLocation();
+                const browserLoc = getBrowserLocation(); // returns {city, country}
+                
+                // Try to geocode the city to get lat/lng
+                let geoLat = null, geoLng = null;
+                try {
+                    // Use OpenStreetMap Nominatim API (Free, no key)
+                    if(browserLoc.city !== "Unknown") {
+                        // Improve search: search city only if country is Earth
+                        const query = browserLoc.country === 'Earth' ? browserLoc.city : `${browserLoc.city},${browserLoc.country}`;
+                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`);
+                        const geoData = await geoRes.json();
+                        if(geoData && geoData.length > 0) {
+                            geoLat = parseFloat(geoData[0].lat);
+                            geoLng = parseFloat(geoData[0].lon);
+                        }
+                    }
+                } catch(e) { console.log("Geocoding failed"); }
+
                 data = {
                     success: false,
                     ip: "Encrypted",
                     city: browserLoc.city,
                     country: browserLoc.country,
-                    latitude: 0,
-                    longitude: 0 // Will prevent pin drop but allow logging
+                    latitude: geoLat, // Now we might have coords!
+                    longitude: geoLng
                 };
             }
 
@@ -541,8 +558,8 @@
                 await sb.from('visitor_logs').insert({ 
                     ip: data.ip || 'Unknown', 
                     location: `${data.city}, ${data.country}`, 
-                    lat: data.latitude || null, 
-                    lng: data.longitude || null, 
+                    lat: (data.latitude !== undefined && data.latitude !== null) ? data.latitude : null, 
+                    lng: (data.longitude !== undefined && data.longitude !== null) ? data.longitude : null, 
                     device: JSON.stringify(clientInfo) 
                 });
                 console.log("Visitor logged successfully");
