@@ -641,7 +641,10 @@
                         .hexBinResolution(4) // Resolution 4 is decent for city level
                         .hexTopColor(() => '#bf5af2') // Purple Top
                         .hexSideColor(() => 'rgba(191, 90, 242, 0.6)') // Purple Side
-                        .hexAltitude(({ sumWeight }) => sumWeight * 0.05 + 0.1); // Height based on density
+                        // 🟢【Update】改为对数逻辑 (Log Scale) 防止光柱过长
+                        // 原逻辑: sumWeight * 0.05 + 0.1
+                        // 新逻辑: Math.log(sumWeight) * 0.07 + 0.05
+                        .hexAltitude(({ sumWeight }) => Math.log(sumWeight) * 0.07 + 0.05); 
 
                     // B. Also add small points at base for cleaner look
                     // Removed individual points under hex bins to avoid clutter, 
