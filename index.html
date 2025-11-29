@@ -135,6 +135,13 @@
         .chat-input-area { padding: 18px 24px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 12px; background: rgba(0,0,0,0.2); }
         .chat-input { flex: 1; background: #1c1c1e; border: 1px solid rgba(255,255,255,0.1); padding: 12px 18px; border-radius: 24px; color: white; outline: none; font-size: 15px; }
         .chat-send { background: var(--accent-purple); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; justify-content: center; align-items: center; }
+        
+        /* Thinking Indicator */
+        .thinking-dots { display: inline-flex; gap: 4px; align-items: center; height: 20px; }
+        .thinking-dots span { width: 6px; height: 6px; background: #86868b; border-radius: 50%; animation: blink 1.4s infinite both; }
+        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.1); } }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
@@ -314,6 +321,8 @@
 
         let currentLang = 'en';
         let sb = null;
+        // Shared location data cache
+        let cachedLocationData = null;
 
         function initSupabase() { if (!CONFIG.url || CONFIG.url.includes('你的URL')) return null; try { return supabase.createClient(CONFIG.url, CONFIG.key); } catch (e) { return null; } }
         function detectLanguage() { const userLang = navigator.language || navigator.userLanguage; if (userLang.startsWith('zh')) setLanguage('zh'); else setLanguage('en'); }
@@ -325,19 +334,128 @@
             if (!sb) { const list = document.getElementById('msg-list'); if (list) list.innerHTML = `<div style="text-align: center; color: #444; font-size: 13px;">${content.db_error}</div>`; }
         }
 
-        window.onload = () => {
-            detectLanguage(); initAnimations(); sb = initSupabase();
-            if (sb) { initStats(); loadMessages(); logVisitor(); initGlobe(); } else { setLanguage(currentLang); }
+        window.onload = async () => {
+            detectLanguage(); 
+            initAnimations(); 
+            sb = initSupabase();
+            
+            // Parallel execution for speed
+            if (sb) {
+                initStats();
+                loadMessages();
+                
+                // First init globe, then log visitor (using cached data if available)
+                await initGlobe();
+                logVisitor(); 
+            } else { 
+                setLanguage(currentLang); 
+            }
         };
 
-        // --- 1. Reliable Globe (Globe.gl) with Night Texture + Fix ---
+        // --- CORE: Robust Location Fetcher (Fetch -> JSONP Fallback) ---
+        async function fetchLocationData() {
+            if (cachedLocationData) return cachedLocationData;
+
+            const fetchWithTimeout = (url, ms) => {
+                const controller = new AbortController();
+                const promise = fetch(url, { signal: controller.signal });
+                const timeout = setTimeout(() => controller.abort(), ms);
+                return promise.finally(() => clearTimeout(timeout));
+            };
+
+            const getBrowserLocation = () => {
+                try {
+                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    if (tz) {
+                        const parts = tz.split('/');
+                        const city = parts[parts.length - 1].replace('_', ' ');
+                        return { city: city, country: "Earth", region: "Unknown" };
+                    }
+                } catch (e) {}
+                return { city: "Unknown", country: "Earth" };
+            };
+
+            // NEW: JSONP Implementation (The "Nuclear Option" for CORS)
+            const fetchIpJsonp = () => {
+                return new Promise((resolve, reject) => {
+                    const callbackName = 'ip_callback_' + Math.round(100000 * Math.random());
+                    window[callbackName] = (data) => {
+                        delete window[callbackName];
+                        document.body.removeChild(script);
+                        resolve(data);
+                    };
+
+                    const script = document.createElement('script');
+                    script.src = `https://ipapi.co/jsonp?callback=${callbackName}`;
+                    script.onerror = reject;
+                    document.body.appendChild(script);
+                });
+            };
+
+            let data = null;
+            
+            // 1. Attempt Standard Fetch (ipwho.is - CORS friendly usually)
+            try {
+                let res = await fetchWithTimeout('https://ipwho.is/', 1500);
+                if (res.ok) data = await res.json();
+            } catch (e) {}
+
+            // 2. Attempt Backup Fetch (db-ip)
+            if (!data || !data.success) {
+                try {
+                    let res = await fetchWithTimeout('https://api.db-ip.com/v2/free/self', 1500);
+                    if (res.ok) {
+                        let rawData = await res.json();
+                        data = { success: true, ip: rawData.ipAddress, city: rawData.city, country: rawData.countryName };
+                    }
+                } catch(e) {}
+            }
+
+            // 3. NUCLEAR OPTION: JSONP (Bypasses Fetch completely)
+            if (!data || (!data.success && !data.ip)) {
+                try {
+                    console.log("Fetch failed. Engaging JSONP...");
+                    const rawData = await fetchIpJsonp();
+                    if(rawData) {
+                        data = { 
+                            success: true, 
+                            ip: rawData.ip, 
+                            city: rawData.city, 
+                            country: rawData.country_name, 
+                            latitude: rawData.latitude, 
+                            longitude: rawData.longitude 
+                        };
+                    }
+                } catch(e) {
+                    console.log("JSONP also failed.");
+                }
+            }
+
+            // 4. Fallback Construction (Timezone)
+            if(!data || (!data.success && !data.ip)) {
+                const browserLoc = getBrowserLocation();
+                data = {
+                    success: false,
+                    ip: "Encrypted",
+                    city: browserLoc.city,
+                    country: browserLoc.country,
+                    latitude: 0,
+                    longitude: 0 // Will prevent pin drop but allow logging
+                };
+            }
+
+            cachedLocationData = data;
+            return data;
+        }
+
+
+        // --- 1. Reliable Globe (Globe.gl) with Hex Bins & Rings ---
         async function initGlobe() {
             if (typeof Globe === 'undefined') {
                 document.getElementById('globeViz').innerHTML = '<div style="color:#666;text-align:center;padding:20px;">Earth module loading...</div>';
                 return;
             }
 
-            // Init Globe
             const elem = document.getElementById('globeViz');
             const width = elem.clientWidth || 300;
             const height = elem.clientHeight || 420;
@@ -346,75 +464,95 @@
                 (elem)
                 .width(width).height(height)
                 .backgroundColor('rgba(0,0,0,0)')
-                // 🌙 NASA Night Lights Texture
                 .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
                 .atmosphereColor('#2997ff')
-                .atmosphereAltitude(0.2)
-                .pointAltitude(0.01)
-                .pointRadius(0.5)
-                .pointColor(() => '#ff3b30') // Red points
-                .pointResolution(2);
+                .atmosphereAltitude(0.2);
 
-            // 1. Fetch User IP (With Timeout Protection)
-            let lat = 0, lng = 0;
-            try {
-                // Timeout promise
-                const fetchWithTimeout = (url, ms) => {
-                    const controller = new AbortController();
-                    const promise = fetch(url, { signal: controller.signal });
-                    const timeout = setTimeout(() => controller.abort(), ms);
-                    return promise.finally(() => clearTimeout(timeout));
-                };
+            // 1. Get User Location (Using robust fetcher)
+            const data = await fetchLocationData();
+            
+            // UI Update
+            document.getElementById('user-ip').innerText = data.ip;
+            document.getElementById('user-location').innerText = `${data.city}, ${data.country}`;
 
-                // Use ipwho.is (No key required, cleaner data)
-                const res = await fetchWithTimeout('https://ipwho.is/', 3000); 
-                if(!res.ok) throw new Error('Network');
-                const data = await res.json();
+            // Current User Visualization (Green Pulse)
+            const ringsData = [];
+            if(data.latitude && data.longitude) {
+                ringsData.push({lat: data.latitude, lng: data.longitude, color: '#30d158'});
                 
-                if(data.success) {
-                    document.getElementById('user-ip').innerText = data.ip;
-                    document.getElementById('user-location').innerText = `${data.city}, ${data.country}`;
-                    
-                    if(data.latitude && data.longitude) {
-                        lat = data.latitude;
-                        lng = data.longitude;
-                        
-                        // Add Pulse Ring
-                        world.ringsData([{lat: lat, lng: lng}]);
-                        world.ringColor(() => '#30d158'); 
-                        world.ringMaxRadius(6);
-                        world.ringPropagationSpeed(3);
-                        world.ringRepeatPeriod(800);
-                        
-                        // Focus on User
-                        world.pointOfView({ lat: lat, lng: lng, altitude: 1.8 }, 2000);
-                    }
-                } else {
-                    throw new Error("IP API failed");
+                // Focus camera
+                world.pointOfView({ lat: data.latitude, lng: data.longitude, altitude: 1.8 }, 2000);
+            }
+
+            // 2. Fetch Historical Visitors (Visualize as Hex Bins)
+            if(sb) {
+                const { data: dbData } = await sb.from('visitor_logs').select('lat, lng').limit(200);
+                
+                if(dbData && dbData.length > 0) {
+                    // Filter valid points
+                    const validPoints = dbData.filter(d => d.lat != null && d.lng != null);
+
+                    // A. Use Hex Bins for History (Looks like glowing bars)
+                    world.hexBinPointsData(validPoints)
+                        .hexBinPointLat(d => d.lat)
+                        .hexBinPointLng(d => d.lng)
+                        .hexBinResolution(4) // Resolution 4 is decent for city level
+                        .hexTopColor(() => '#bf5af2') // Purple Top
+                        .hexSideColor(() => 'rgba(191, 90, 242, 0.6)') // Purple Side
+                        .hexAltitude(({ sumWeight }) => sumWeight * 0.05 + 0.1); // Height based on density
+
+                    // B. Also add small points at base for cleaner look
+                    // Removed individual points under hex bins to avoid clutter, 
+                    // but kept Current User point below.
                 }
-            } catch(e) { 
-                console.log('Location IP failed', e);
-                document.getElementById('user-ip').innerText = "127.0.0.1"; 
-                document.getElementById('user-location').innerText = "Unknown / Classified";
-                // If fail, just auto rotate
+            }
+            
+            // Set Rings (Current User Only - to distinguish)
+            world.ringsData(ringsData);
+            world.ringColor('color');
+            world.ringMaxRadius(6);
+            world.ringPropagationSpeed(3);
+            world.ringRepeatPeriod(800);
+            
+            // Fallback Auto-rotate if no user location
+            if(!data.latitude) {
                 world.controls().autoRotate = true;
                 world.controls().autoRotateSpeed = 0.6;
             }
-
-            // 2. Fetch Visitors (Mock points if DB empty, real if available)
-            if(sb) {
-                const { data } = await sb.from('visitor_logs').select('lat, lng').limit(100);
-                if(data && data.length > 0) {
-                    const points = data.filter(d => d.lat && d.lng).map(d => ({ lat: d.lat, lng: d.lng, size: 0.1 }));
-                    world.pointsData(points);
-                } else if (lat) {
-                    // If no DB data yet, just show current user point
-                    world.pointsData([{lat: lat, lng: lng, size: 1}]);
-                }
-            }
         }
 
-        // --- 2. Schrödinger's Box (Simplified Chinese Strict) ---
+        // --- 2. Robust Visitor Logger ---
+        async function logVisitor() {
+            if (!sb) return; 
+            
+            try {
+                // Reuse the ROBUST data we fetched for the globe
+                // This ensures we never fail just because IP failed
+                const data = await fetchLocationData(); 
+                
+                const clientInfo = { 
+                    userAgent: navigator.userAgent, 
+                    screen: `${window.screen.width}x${window.screen.height}`, 
+                    language: navigator.language,
+                    renderer: "Client-Side" 
+                };
+                
+                // Safe Insert
+                await sb.from('visitor_logs').insert({ 
+                    ip: data.ip || 'Unknown', 
+                    location: `${data.city}, ${data.country}`, 
+                    lat: data.latitude || null, 
+                    lng: data.longitude || null, 
+                    device: JSON.stringify(clientInfo) 
+                });
+                console.log("Visitor logged successfully");
+                
+            } catch (e) {
+                console.log("Visitor log completely failed:", e);
+            } 
+        }
+
+        // --- 3. Schrödinger's Box ---
         async function openQuantumBox() {
             const resultEl = document.getElementById('quantum-result');
             const iconEl = document.querySelector('.box-icon');
@@ -435,7 +573,6 @@
             gsap.from(".gsap-hero", { opacity: 0, y: 30, duration: 1, stagger: 0.2, ease: "power3.out" });
             gsap.utils.toArray('.scroll-fade').forEach(el => { gsap.from(el, { scrollTrigger: { trigger: el, start: "top 85%" }, opacity: 0, y: 40, duration: 0.8, ease: "power3.out" }); });
         }
-        async function logVisitor() { if (!sb) return; try { const res = await fetch('https://ipwho.is/'); const data = await res.json(); const clientInfo = { userAgent: navigator.userAgent, screen: `${window.screen.width}x${window.screen.height}`, language: navigator.language }; await sb.from('visitor_logs').insert({ ip: data.ip, location: `${data.city}, ${data.country}`, lat: data.latitude, lng: data.longitude, device: JSON.stringify(clientInfo) }); } catch (e) {} }
         async function initStats() { try { await sb.rpc('increment_visits', { page_id: 'home_page' }); const { data } = await sb.from('site_stats').select('visits').eq('id', 'home_page').single(); if (data) { const el = document.getElementById('visit-count'); let obj = { val: 0 }; gsap.to(obj, { val: data.visits, duration: 2, ease: "power4.out", onUpdate: () => el.innerText = Math.floor(obj.val).toLocaleString() }); } } catch(e) {} }
         async function loadMessages() { const list = document.getElementById('msg-list'); const { data } = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(10); if (!data || data.length === 0) { list.innerHTML = `<div style="text-align: center; color: #444;">${i18n[currentLang].no_msg}</div>`; return; } list.innerHTML = data.map(msg => `<div class="msg-bubble">${msg.content.replace(/</g, "&lt;")}<span class="msg-time">${new Date(msg.created_at).toLocaleDateString()}</span></div>`).join(''); }
         async function sendMsg() { if (!sb) { alert('Please configure Supabase Key.'); return; } const input = document.getElementById('msg-input'); const text = input.value.trim(); if(!text) return; const { error } = await sb.from('messages').insert({ content: text }); if (!error) { input.value = ''; loadMessages(); } else { alert(i18n[currentLang].send_fail); } }
@@ -456,10 +593,31 @@
         async function sendAIChat() {
             const input = document.getElementById('chat-input'); const body = document.getElementById('chat-body'); const text = input.value.trim();
             if (!text) return; if (!CONFIG.geminiKey) { alert("AI API Key not configured."); return; }
-            body.innerHTML += `<div class="chat-bubble user">${text}</div>`; input.value = ''; body.scrollTop = body.scrollHeight;
-            const sysPrompt = `You are Tom Shi's AI digital twin. Physics enthusiast, Web Dev. Quote Li Bai. Keep concise. Lang: ${currentLang}. User: ${text}`;
+            
+            // 1. User Message
+            body.innerHTML += `<div class="chat-bubble user">${text}</div>`; 
+            input.value = ''; 
+            body.scrollTop = body.scrollHeight;
+
+            // 2. Thinking Bubble
+            const thinkingId = 'thinking-' + Date.now();
+            body.innerHTML += `
+                <div class="chat-bubble ai" id="${thinkingId}">
+                    <div class="thinking-dots"><span></span><span></span><span></span></div>
+                </div>`;
+            body.scrollTop = body.scrollHeight;
+
+            // 3. AI Request
+            // Remove "Quote Li Bai", add "Helpful & Concise"
+            const sysPrompt = `You are Tom Shi's AI digital twin. Physics enthusiast, Web Dev. Be helpful, philosophical, and concise. Do not explicitly quote Li Bai unless asked. Lang: ${currentLang}. User: ${text}`;
             const aiText = await callGemini(sysPrompt);
-            body.innerHTML += aiText ? `<div class="chat-bubble ai">${marked.parse(aiText)}</div>` : `<div class="chat-bubble ai">AI Offline.</div>`; body.scrollTop = body.scrollHeight;
+
+            // 4. Remove Thinking & Show Result
+            const thinkingEl = document.getElementById(thinkingId);
+            if (thinkingEl) thinkingEl.remove();
+
+            body.innerHTML += aiText ? `<div class="chat-bubble ai">${marked.parse(aiText)}</div>` : `<div class="chat-bubble ai">AI Offline.</div>`; 
+            body.scrollTop = body.scrollHeight;
         }
     </script>
 </body>
