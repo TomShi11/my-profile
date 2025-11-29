@@ -297,7 +297,11 @@
 
     <script>
         // --- 核心配置区 (CONFIG) ---
-        // 我们定义了两种模式，代码会根据 IP 自动选择
+        // 【安全提示】
+        // 1. Supabase Key: 是公开的 (Publishable)，请确保在 Supabase 后台开启 RLS (Row Level Security) 策略以保护数据。
+        // 2. Gemini Key: 已在 Google Cloud Console 设置域名限制 (tomshi.online)，仅限本站使用，相对安全。
+        // 3. SiliconFlow Key: ⚠️ 目前暴露在前端。建议仅使用免费/小额账户，或通过后端代理 (如 Cloudflare Worker) 隐藏此 Key。
+        
         const CONFIG = {
             url: 'https://fznfneqwxzuwtognuoeo.supabase.co',
             key: 'sb_publishable_UlNMDLt4OaYIX-_lCezGwA_8jIQLhFO',
@@ -307,13 +311,14 @@
                 gemini: {
                     provider: 'gemini',
                     name: 'Gemini (Google)',
-                    key: 'AIzaSyC9j7AL5vtuyEHfu5V69nVcyjVGZ5uHcUA', // 已更新为你的新 Key
+                    key: 'AIzaSyC9j7AL5vtuyEHfu5V69nVcyjVGZ5uHcUA', 
                     url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent',
                     model: ''
                 },
                 siliconflow: {
                     provider: 'openai', 
                     name: 'Qwen 2.5 (CN)',
+                    // ⚠️ 注意：此 Key 为 Bearer Token，尽量不要在公共 GitHub 仓库中长期暴露高额度账户的 Key
                     key: 'sk-lsjnmtotknlkcsqftmaznqcksfpzeuamuoodrwldbcersxal',
                     url: 'https://api.siliconflow.cn/v1/chat/completions',
                     model: 'Qwen/Qwen2.5-7B-Instruct' 
@@ -714,19 +719,28 @@
         async function loadMessages() { const list = document.getElementById('msg-list'); const { data } = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(10); if (!data || data.length === 0) { list.innerHTML = `<div style="text-align: center; color: #444;">${i18n[currentLang].no_msg}</div>`; return; } list.innerHTML = data.map(msg => `<div class="msg-bubble">${msg.content.replace(/</g, "&lt;")}<span class="msg-time">${new Date(msg.created_at).toLocaleDateString()}</span></div>`).join(''); }
         async function sendMsg() { if (!sb) { alert('Please configure Supabase Key.'); return; } const input = document.getElementById('msg-input'); const text = input.value.trim(); if(!text) return; const { error } = await sb.from('messages').insert({ content: text }); if (!error) { input.value = ''; loadMessages(); } else { alert(i18n[currentLang].send_fail); } }
         
-        // --- 通用 AI 调用函数 (支持 Gemini & OpenAI Compatible) ---
-        async function callAI(prompt) {
-            const activeProfile = CONFIG.active;
+        // --- 通用 AI 调用函数 (支持 Gemini & OpenAI Compatible) + 自动故障转移 ---
+        async function callAI(prompt, retry = true) {
+            // 1. 确定当前使用的配置 (如果是重试，就用备用配置)
+            let profile = CONFIG.active;
             
-            if (!activeProfile || !activeProfile.key) { console.error("AI Key missing"); return null; }
+            // 如果处于重试模式，且当前是 Gemini，则切换到 SiliconFlow，反之亦然
+            if (retry === 'backup') {
+                profile = (CONFIG.active === CONFIG.profiles.gemini) 
+                    ? CONFIG.profiles.siliconflow 
+                    : CONFIG.profiles.gemini;
+                console.log("Switching to backup profile:", profile.name);
+            }
+
+            if (!profile || !profile.key) { console.error("AI Key missing"); return null; }
 
             try {
                 let response, data, resultText;
 
                 // 1. OpenAI Compatible Mode (DeepSeek, Kimi, etc.)
-                if (activeProfile.provider === 'openai') {
+                if (profile.provider === 'openai') {
                     const payload = {
-                        model: activeProfile.model,
+                        model: profile.model,
                         messages: [
                             { role: "system", content: "You are a helpful assistant." },
                             { role: "user", content: prompt }
@@ -734,11 +748,11 @@
                         stream: false
                     };
                     
-                    response = await fetch(activeProfile.url, {
+                    response = await fetch(profile.url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${activeProfile.key}`
+                            'Authorization': `Bearer ${profile.key}`
                         },
                         body: JSON.stringify(payload)
                     });
@@ -748,7 +762,7 @@
 
                 } else {
                     // 2. Default: Google Gemini Mode
-                    const geminiUrl = `${activeProfile.url}?key=${activeProfile.key}`;
+                    const geminiUrl = `${profile.url}?key=${profile.key}`;
                     const payload = { contents: [{ parts: [{ text: prompt }] }] };
                     
                     response = await fetch(geminiUrl, {
@@ -761,9 +775,16 @@
                     resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 }
 
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return resultText;
             } catch (e) {
-                console.error("AI Call Failed:", e);
+                console.error(`AI Call Failed (${profile.name}):`, e);
+                
+                // 自动故障转移逻辑
+                if (retry === true) {
+                    console.log("Attempting failover to backup provider...");
+                    return await callAI(prompt, 'backup');
+                }
                 return null;
             }
         }
