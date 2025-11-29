@@ -155,6 +155,9 @@
             .tile-large, .tile-small { grid-column: span 1; }
             .tile { min-height: 300px; height: auto; }
             .chat-modal { width: 100%; height: 100%; bottom: 0; right: 0; border-radius: 0; }
+            
+            /* 手机端打开聊天时，隐藏浮动按钮 (防止遮挡发送键) */
+            .fab-ai.active { opacity: 0; pointer-events: none; transform: scale(0.8); }
         }
     </style>
 </head>
@@ -349,6 +352,24 @@
         let sb = null;
         // Shared location data cache
         let cachedLocationData = null;
+
+        // --- 手动地理坐标补全库 (修复历史数据无坐标的问题) ---
+        const CITY_COORDINATES = {
+            "Zhengzhou": { lat: 34.7466, lng: 113.6253 },
+            "Beijing": { lat: 39.9042, lng: 116.4074 },
+            "Shanghai": { lat: 31.2304, lng: 121.4737 },
+            "Guangzhou": { lat: 23.1291, lng: 113.2644 },
+            "Shenzhen": { lat: 22.5431, lng: 114.0579 },
+            "Hong Kong": { lat: 22.3193, lng: 114.1694 },
+            "Singapore": { lat: 1.3521, lng: 103.8198 },
+            "Tokyo": { lat: 35.6762, lng: 139.6503 },
+            "New York": { lat: 40.7128, lng: -74.0060 },
+            "San Francisco": { lat: 37.7749, lng: -122.4194 },
+            "London": { lat: 51.5074, lng: -0.1278 },
+            "Chengdu": { lat: 30.5728, lng: 104.0668 },
+            "Wuhan": { lat: 30.5928, lng: 114.3055 },
+            "Hangzhou": { lat: 30.2741, lng: 120.1551 }
+        };
 
         function initSupabase() { if (!CONFIG.url || CONFIG.url.includes('你的URL')) return null; try { return supabase.createClient(CONFIG.url, CONFIG.key); } catch (e) { return null; } }
         function detectLanguage() { const userLang = navigator.language || navigator.userLanguage; if (userLang.startsWith('zh')) setLanguage('zh'); else setLanguage('en'); }
@@ -588,11 +609,25 @@
 
             // 2. Fetch Historical Visitors (Visualize as Hex Bins)
             if(sb) {
-                const { data: dbData } = await sb.from('visitor_logs').select('lat, lng').limit(200);
+                const { data: dbData } = await sb.from('visitor_logs').select('location, lat, lng').limit(200);
                 
                 if(dbData && dbData.length > 0) {
-                    // Filter valid points
-                    const validPoints = dbData.filter(d => d.lat != null && d.lng != null);
+                    
+                    // --- PATCH: Fix missing coordinates using Client-Side Dictionary ---
+                    const validPoints = dbData.map(d => {
+                        // If coordinates exist, use them
+                        if(d.lat != null && d.lng != null) return d;
+                        
+                        // If coordinates missing, try to lookup city in dictionary
+                        if(d.location) {
+                            for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
+                                if (d.location.includes(city)) {
+                                    return { ...d, lat: coords.lat, lng: coords.lng };
+                                }
+                            }
+                        }
+                        return d;
+                    }).filter(d => d.lat != null && d.lng != null); // Final filter
 
                     // A. Use Hex Bins for History (Looks like glowing bars)
                     world.hexBinPointsData(validPoints)
@@ -739,7 +774,7 @@
             let prompt = currentLang === 'zh' ? (originalText ? `改写更有科技感（中文，30字内）："${originalText}"` : "写一句关于宇宙的简短留言（中文）") : (originalText ? `Rewrite sci-fi style (English): "${originalText}"` : "Write sci-fi message (English)");
             const text = await callAI(prompt); if (text) input.value = text.trim().replace(/^"|"$/g, ''); btn.classList.remove('loading');
         }
-        function toggleChat() { document.getElementById('chat-modal').classList.toggle('open'); }
+        function toggleChat() { document.getElementById('chat-modal').classList.toggle('open'); document.querySelector('.fab-ai').classList.toggle('active'); }
         function toggleFullscreen() { document.getElementById('chat-modal').classList.toggle('fullscreen'); }
         async function sendAIChat() {
             const input = document.getElementById('chat-input'); const body = document.getElementById('chat-body'); const text = input.value.trim();
